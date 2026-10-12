@@ -26,7 +26,11 @@ export default function Login() {
         return;
       }
 
-      const supabase = createBrowserClient(url, key);
+      const supabase = createBrowserClient(url, key, {
+  auth: {
+    flowType: 'pkce',
+  },
+});
 
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
