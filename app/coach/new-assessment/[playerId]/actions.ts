@@ -36,39 +36,7 @@ export async function saveAssessmentDraft(
     };
   }
 
-  // Confirm this is an active coach.
-  const { data: coach, error: coachError } = await supabase
-    .from('coaches')
-    .select('id')
-    .eq('id', user.id)
-    .eq('is_active', true)
-    .maybeSingle();
-
-  if (coachError || !coach) {
-    return {
-      success: false,
-      message: 'Coach access required.',
-    };
-  }
-
-  // Confirm the player is assigned to this coach.
-  const { data: assignment, error: assignmentError } =
-    await supabase
-      .from('coach_players')
-      .select('player_id')
-      .eq('coach_id', user.id)
-      .eq('player_id', playerId)
-      .maybeSingle();
-
-  if (assignmentError || !assignment) {
-    return {
-      success: false,
-      message: 'This player is not assigned to you.',
-    };
-  }
-
-  // Load the official criteria, rather than trusting
-  // criterion names supplied by the browser.
+  // Load the official assessment criteria.
   const { data: criteria, error: criteriaError } = await supabase
     .from('assessment_criteria')
     .select('category, criterion');
@@ -80,242 +48,56 @@ export async function saveAssessmentDraft(
     };
   }
 
-  const scores: {
+  const responses: {
     category: string;
     criterion: string;
-    score: number;
+    value: string;
   }[] = [];
-  const observations: {
-  category: string;
-  criterion: string;
-}[] = [];
 
   for (const item of criteria) {
     const key = `score:${item.category}:${item.criterion}`;
     const rawValue = formData.get(key);
 
-    if (typeof rawValue !== 'string') {
+    // No selection means the criterion is not yet assessed.
+    if (rawValue === null || rawValue === '') {
       continue;
     }
 
-   if (rawValue === 'not-observed') {
-  observations.push({
-    category: item.category,
-    criterion: item.criterion,
-  });
-  continue;
-}
-
-if (rawValue === '') {
-  continue;
-}
-
-    const score = Number(rawValue);
-
-    if (!Number.isInteger(score) || score < 1 || score > 5) {
+    if (
+      typeof rawValue !== 'string' ||
+      !['1', '2', '3', '4', '5', 'not-observed'].includes(rawValue)
+    ) {
       return {
         success: false,
-        message: 'An invalid assessment score was submitted.',
+        message: 'An invalid assessment response was submitted.',
       };
     }
 
-    scores.push({
+    responses.push({
       category: item.category,
       criterion: item.criterion,
-      score,
+      value: rawValue,
     });
   }
 
-  // Look for an existing assessment for this period.
-  const { data: existing, error: existingError } = await supabase
-    .from('assessments')
-    .select('id, status')
-    .eq('player_id', playerId)
-    .eq('period_label', PERIOD_LABEL)
-    .maybeSingle();
+  // Save everything through one database transaction.
+  const { error: saveError } = await supabase.rpc(
+    'save_cub_hub_draft',
+    {
+      p_player_id: playerId,
+      p_period_label: PERIOD_LABEL,
+      p_responses: responses,
+    }
+  );
 
-  if (existingError) {
+  if (saveError) {
+    console.error('Draft save failed:', saveError.message);
+
     return {
       success: false,
-      message: 'Unable to check existing assessments.',
+      message: 'Unable to save the draft. Please try again.',
     };
   }
-
-  if (existing && existing.status !== 'draft') {
-    return {
-      success: false,
-      message: 'This assessment has already been published.',
-    };
-  }
-
-  let assessmentId: number;
-
-  if (existing) {
-    assessmentId = existing.id;
-  } else {
-    const { data: created, error: createError } = await supabase
-      .from('assessments')
-      .insert({
-        player_id: playerId,
-        period_label: PERIOD_LABEL,
-        status: 'draft',
-        published_at: null,
-      })
-      .select('id')
-      .single();
-
-    if (createError || !created) {
-      return {
-        success: false,
-        message: 'Unable to create the draft assessment.',
-      };
-    }
-
-    assessmentId = created.id;
-  }
-
-
-const { data: existingScores, error: readError } =
-  await supabase
-    .from('assessment_scores')
-    .select('id, category, criterion, score')
-    .eq('assessment_id', assessmentId);
-
-if (readError) {
-  return {
-    success: false,
-    message: 'Unable to load previously saved scores.',
-  };
-}
-
-// Save new scores and update scores that have changed.
-for (const item of scores) {
-  const previous = (existingScores || []).find(
-    (saved) =>
-      saved.category === item.category &&
-      saved.criterion === item.criterion
-  );
-
-  if (previous) {
-    if (previous.score !== item.score) {
-      const { error } = await supabase
-        .from('assessment_scores')
-        .update({ score: item.score })
-        .eq('id', previous.id);
-
-      if (error) {
-        return {
-          success: false,
-          message: 'Unable to update an existing score.',
-        };
-      }
-    }
-  } else {
-    const { error } = await supabase
-      .from('assessment_scores')
-      .insert({
-        assessment_id: assessmentId,
-        category: item.category,
-        criterion: item.criterion,
-        score: item.score,
-      });
-
-    if (error) {
-      return {
-        success: false,
-        message: 'Unable to save a new score.',
-      };
-    }
-  }
-}
-
-// Remove previously saved scores that are now
-// Not Observed or have been cleared.
-for (const previous of existingScores || []) {
-  const stillScored = scores.some(
-    (item) =>
-      item.category === previous.category &&
-      item.criterion === previous.criterion
-  );
-
-  if (!stillScored) {
-    const { error } = await supabase
-      .from('assessment_scores')
-      .delete()
-      .eq('id', previous.id);
-
-    if (error) {
-      return {
-        success: false,
-        message: 'Unable to remove a cleared score.',
-      };
-    }
-  }
-}
-
-
-const { data: existingObservations, error: observationReadError } =
-  await supabase
-    .from('assessment_observations')
-    .select('id, category, criterion')
-    .eq('assessment_id', assessmentId);
-
-if (observationReadError) {
-  return {
-    success: false,
-    message: 'Unable to load existing observations.',
-  };
-}
-
-// Add new Not Observed selections.
-for (const item of observations) {
-  const alreadyExists = (existingObservations || []).some(
-    (previous) =>
-      previous.category === item.category &&
-      previous.criterion === item.criterion
-  );
-
-  if (!alreadyExists) {
-    const { error } = await supabase
-      .from('assessment_observations')
-      .insert({
-        assessment_id: assessmentId,
-        category: item.category,
-        criterion: item.criterion,
-      });
-
-    if (error) {
-      return {
-        success: false,
-        message: 'Unable to save a Not Observed selection.',
-      };
-    }
-  }
-}
-
-// Remove Not Observed selections when a coach
-// changes them to a numerical score or clears them.
-for (const previous of existingObservations || []) {
-  const stillNotObserved = observations.some(
-    (item) =>
-      item.category === previous.category &&
-      item.criterion === previous.criterion
-  );
-
-  if (!stillNotObserved) {
-    const { error } = await supabase
-      .from('assessment_observations')
-      .delete()
-      .eq('id', previous.id);
-
-    if (error) {
-      return {
-        success: false,
-        message: 'Unable to update a Not Observed selection.',
-      };
-    }
-  }
-}
 
   revalidatePath(`/coach/new-assessment/${playerId}`);
 
