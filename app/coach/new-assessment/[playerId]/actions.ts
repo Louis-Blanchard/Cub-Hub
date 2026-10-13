@@ -132,14 +132,28 @@ const { error: saveError } = await supabase.rpc(
 );
 
 
-  if (saveError) {
-    console.error('Draft save failed:', saveError.message);
 
+if (saveError) {
+  console.error('Draft save failed:', saveError.message);
+
+  if (
+    saveError.message.includes(
+      'Assessment has changed'
+    )
+  ) {
     return {
       success: false,
-      message: 'Unable to save the draft. Please try again.',
+      message:
+        'This assessment has been updated by another coach. Please refresh the page to see the latest changes before saving again.',
     };
   }
+
+  return {
+    success: false,
+    message: 'Unable to save the draft. Please try again.',
+  };
+}
+
 
   revalidatePath(`/coach/new-assessment/${playerId}`);
 
