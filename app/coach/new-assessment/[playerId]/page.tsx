@@ -132,6 +132,30 @@ export default async function PlayerAssessmentPage({
     score: number;
   }[] = [];
 
+let savedObservations: {
+  category: string;
+  criterion: string;
+}[] = [];
+
+let observationsError = false;
+
+if (existingAssessment?.status === 'draft') {
+  const { data, error } = await supabase
+    .from('assessment_observations')
+    .select('category, criterion')
+    .eq('assessment_id', existingAssessment.id);
+
+  if (error) {
+    observationsError = true;
+    console.error(
+      'Unable to load observations:',
+      error.message
+    );
+  } else {
+    savedObservations = data || [];
+  }
+}
+
   let scoresError = false;
 
   if (existingAssessment?.status === 'draft') {
@@ -147,12 +171,15 @@ export default async function PlayerAssessmentPage({
     }
   }
 
-  const canEdit =
-    !criteriaError &&
-    criteria.length > 0 &&
-    !assessmentError &&
-    !scoresError &&
-    existingAssessment?.status !== 'published';
+
+const canEdit =
+  !criteriaError &&
+  criteria.length > 0 &&
+  !assessmentError &&
+  !scoresError &&
+  !observationsError &&
+  existingAssessment?.status !== 'published';
+
 
   async function saveDraft(formData: FormData) {
     'use server';
@@ -224,7 +251,7 @@ export default async function PlayerAssessmentPage({
           </div>
         )}
 
-        {criteriaError || assessmentError || scoresError ? (
+        {criteriaError || assessmentError || scoresError || observationsError ? (
           <div className="notice">
             <p>
               Unable to load the assessment. Please try again.
@@ -261,6 +288,13 @@ export default async function PlayerAssessmentPage({
                         score.category === item.category &&
                         score.criterion === item.criterion
                     );
+                  
+const wasNotObserved = savedObservations.some(
+  (observation) =>
+    observation.category === item.category &&
+    observation.criterion === item.criterion
+);
+
 
                     const fieldName =
                       `score:${item.category}:${item.criterion}`;
@@ -318,11 +352,14 @@ export default async function PlayerAssessmentPage({
                             cursor: 'pointer',
                           }}
                         >
-                          <input
-                            type="radio"
-                            name={fieldName}
-                            value="not-observed"
-                          />
+                          
+<input
+  type="radio"
+  name={fieldName}
+  value="not-observed"
+  defaultChecked={wasNotObserved}
+/>
+
                           <span>Not Observed</span>
                         </label>
                       </div>
