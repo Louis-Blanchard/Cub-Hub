@@ -81,14 +81,56 @@ export async function saveAssessmentDraft(
   }
 
   // Save everything through one database transaction.
-  const { error: saveError } = await supabase.rpc(
-    'save_cub_hub_draft',
-    {
-      p_player_id: playerId,
-      p_period_label: PERIOD_LABEL,
-      p_responses: responses,
-    }
-  );
+
+const rawVersion = formData.get('draft_version');
+
+if (
+  typeof rawVersion !== 'string' ||
+  !/^\d+$/.test(rawVersion)
+) {
+  return {
+    success: false,
+    message: 'Invalid assessment version. Refresh the page.',
+  };
+}
+
+const expectedVersion = Number(rawVersion);
+
+if (!Number.isSafeInteger(expectedVersion)) {
+  return {
+    success: false,
+    message: 'Invalid assessment version. Refresh the page.',
+  };
+}
+
+const strength = String(formData.get('strength') ?? '');
+const nextStep1 = String(formData.get('next_step_1') ?? '');
+const nextStep2 = String(formData.get('next_step_2') ?? '');
+
+if (
+  strength.length > 2000 ||
+  nextStep1.length > 2000 ||
+  nextStep2.length > 2000
+) {
+  return {
+    success: false,
+    message: 'Each feedback field must be under 2000 characters.',
+  };
+}
+
+const { error: saveError } = await supabase.rpc(
+  'save_cub_hub_draft',
+  {
+    p_player_id: playerId,
+    p_period_label: PERIOD_LABEL,
+    p_responses: responses,
+    p_expected_version: expectedVersion,
+    p_strength: strength,
+    p_next_step_1: nextStep1,
+    p_next_step_2: nextStep2,
+  }
+);
+
 
   if (saveError) {
     console.error('Draft save failed:', saveError.message);
