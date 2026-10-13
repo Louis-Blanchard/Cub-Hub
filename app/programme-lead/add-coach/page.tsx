@@ -6,7 +6,12 @@ import { createCoach } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function AddCoachPage() {
+export default async function AddCoachPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error: invitationError } = await searchParams;
   const supabase = await supabaseServer();
 
   const {
@@ -39,6 +44,19 @@ export default async function AddCoachPage() {
       </Link>
 
       <h1>Add New Coach</h1>
+      {invitationError === "email_limit" && (
+  <p role="alert" style={{ color: "#b91c1c", fontWeight: "bold" }}>
+    Supabase has reached its email sending limit.
+    Please wait before trying to invite another coach.
+  </p>
+)}
+
+{invitationError === "invitation_failed" && (
+  <p role="alert" style={{ color: "#b91c1c", fontWeight: "bold" }}>
+    We couldn't send the coach invitation.
+    Please check the email address and try again later.
+  </p>
+)}
 
       <p>
         Create a new coach account for the
