@@ -1,69 +1,100 @@
 
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useState } from "react";
+import { requestEmailChange } from "./actions";
 
 export default function ChangeEmailPage() {
-  const [email, setEmail] = useState('')
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setLoading(true)
-    setMessage('')
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    setLoading(true);
+    setMessage("");
+    setError("");
 
-    const { data: { user }, error: userError } =
-      await supabase.auth.getUser()
+    try {
+      const formData = new FormData();
+      formData.set("email", email);
 
-    if (userError || !user) {
-      setMessage('Please log in before changing your email.')
-      setLoading(false)
-      return
+      const result = await requestEmailChange(formData);
+
+      if (result.error) {
+        setError(result.error);
+      } else if (result.success) {
+        setMessage(result.success);
+        setEmail("");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const { error } = await supabase.auth.updateUser({
-      email: email.trim()
-    })
-
-    if (error) {
-      setMessage(error.message)
-    } else {
-      setMessage(
-        'Email change requested. Please check both email inboxes for confirmation links.'
-      )
-    }
-
-    setLoading(false)
   }
 
   return (
-    <main style={{ maxWidth: 500, margin: '50px auto', padding: 20 }}>
+    <main
+      style={{
+        maxWidth: 520,
+        margin: "50px auto",
+        padding: 24,
+      }}
+    >
       <h1>Change Login Email</h1>
-      <p>Enter the new email address for your Cub Hub account.</p>
+
+      <p>
+        Update the email address used to log in to your
+        Cub Hub Programme Lead account.
+      </p>
 
       <form onSubmit={handleSubmit}>
+        <label htmlFor="email">
+          New email address
+        </label>
+
         <input
+          id="email"
           type="email"
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="New work email address"
-          style={{ padding: 12, width: '100%', marginBottom: 15 }}
+          onChange={(event) =>
+            setEmail(event.target.value)
+          }
+          placeholder="Your Suffolk Cricket work email"
+          style={{
+            display: "block",
+            width: "100%",
+            padding: 12,
+            marginTop: 8,
+            marginBottom: 20,
+            boxSizing: "border-box",
+          }}
         />
 
         <button type="submit" disabled={loading}>
-          {loading ? 'Sending...' : 'Request Email Change'}
+          {loading
+            ? "Sending confirmation..."
+            : "Request Email Change"}
         </button>
       </form>
 
-      {message && <p role="status">{message}</p>}
+      {error && (
+        <p role="alert" style={{ color: "red" }}>
+          {error}
+        </p>
+      )}
+
+      {message && (
+        <p role="status" style={{ color: "green" }}>
+          {message}
+        </p>
+      )}
     </main>
-  )
+  );
 }
