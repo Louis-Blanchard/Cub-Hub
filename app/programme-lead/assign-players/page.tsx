@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "../../../lib/supabase";
 import AssignPlayerForm from "./AssignPlayerForm";
+import RemoveAssignmentButton from "./RemoveAssignmentButton";
 
 export default async function AssignPlayersPage() {
   const supabase = await supabaseServer();
@@ -90,12 +91,18 @@ export default async function AssignPlayersPage() {
         {assignedPlayers?.length ? (
           <ul>
             {assignedPlayers.map((player) => (
-              <li key={player.id}>
-                {player.first_name} {player.last_name}
-                {" — "}
-                {player.age_group}
-              </li>
-            ))}
+  <li key={player.id} style={{ marginBottom: 10 }}>
+    {player.first_name} {player.last_name}
+    {" — "}
+    {player.age_group}
+
+    <RemoveAssignmentButton
+      coachId={coach.id}
+      playerId={player.id}
+      playerName={`${player.first_name} ${player.last_name}`}
+    />
+  </li>
+))}
           </ul>
         ) : (
           <p>No players assigned yet.</p>
