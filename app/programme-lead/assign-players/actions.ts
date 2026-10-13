@@ -87,4 +87,57 @@ export async function assignPlayer(formData: FormData) {
   revalidatePath("/programme-lead/assign-players");
 
   return { success: "Player assigned successfully." };
+
+export async function removeAssignment(formData: FormData) {
+  const supabase = await supabaseServer();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Please log in again." };
+  }
+
+  const { data: lead, error: leadError } = await supabase
+    .from("programme_leads")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (leadError || !lead) {
+    return { error: "Only Programme Leads can remove assignments." };
+  }
+
+  const coachId = String(formData.get("coach_id") ?? "");
+  const playerId = Number(formData.get("player_id"));
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(coachId) ||
+    !Number.isSafeInteger(playerId) ||
+    playerId <= 0
+  ) {
+    return { error: "Invalid coach or player." };
+  }
+
+  const { data: removed, error: deleteError } = await supabase
+    .from("coach_players")
+    .delete()
+    .eq("coach_id", coachId)
+    .eq("player_id", playerId)
+    .select("id");
+
+  if (deleteError) {
+    return { error: "Unable to remove assignment: " + deleteError.message };
+  }
+
+  if (!removed?.length) {
+    return { error: "Assignment not found or already removed." };
+  }
+
+  revalidatePath("/programme-lead/assign-players");
+
+  return { success: "Assignment removed successfully." };
 }
+
