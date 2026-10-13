@@ -162,26 +162,85 @@ export async function saveAssessmentDraft(
     assessmentId = created.id;
   }
 
-  if (scores.length > 0) {
-    const { error: scoreError } = await supabase
-      .from('assessment_scores')
-      .upsert(
-        scores.map((item) => ({
-          assessment_id: assessmentId,
-          ...item,
-        })),
-        {
-          onConflict: 'assessment_id,category,criterion',
-        }
-      );
 
-    if (scoreError) {
+const { data: existingScores, error: readError } =
+  await supabase
+    .from('assessment_scores')
+    .select('id, category, criterion, score')
+    .eq('assessment_id', assessmentId);
+
+if (readError) {
+  return {
+    success: false,
+    message: 'Unable to load previously saved scores.',
+  };
+}
+
+// Save new scores and update scores that have changed.
+for (const item of scores) {
+  const previous = (existingScores || []).find(
+    (saved) =>
+      saved.category === item.category &&
+      saved.criterion === item.criterion
+  );
+
+  if (previous) {
+    if (previous.score !== item.score) {
+      const { error } = await supabase
+        .from('assessment_scores')
+        .update({ score: item.score })
+        .eq('id', previous.id);
+
+      if (error) {
+        return {
+          success: false,
+          message: 'Unable to update an existing score.',
+        };
+      }
+    }
+  } else {
+    const { error } = await supabase
+      .from('assessment_scores')
+      .insert({
+        assessment_id: assessmentId,
+        category: item.category,
+        criterion: item.criterion,
+        score: item.score,
+      });
+
+    if (error) {
       return {
         success: false,
-        message: 'Unable to save assessment scores.',
+        message: 'Unable to save a new score.',
       };
     }
   }
+}
+
+// Remove previously saved scores that are now
+// Not Observed or have been cleared.
+for (const previous of existingScores || []) {
+  const stillScored = scores.some(
+    (item) =>
+      item.category === previous.category &&
+      item.criterion === previous.criterion
+  );
+
+  if (!stillScored) {
+    const { error } = await supabase
+      .from('assessment_scores')
+      .delete()
+      .eq('id', previous.id);
+
+    if (error) {
+      return {
+        success: false,
+        message: 'Unable to remove a cleared score.',
+      };
+    }
+  }
+}
+
 
   revalidatePath(`/coach/new-assessment/${playerId}`);
 
