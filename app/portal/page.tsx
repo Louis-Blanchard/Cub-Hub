@@ -147,9 +147,30 @@ export default async function Portal() {
                     (item) => item.assessment_id === report.id
                   );
 
-                  const battingScores = detailedScores.filter(
-                    (item) => item.category === 'Batting'
-                  );
+                  
+const categories = [
+  'Batting',
+  'Bowling',
+  'Fielding',
+  'Wicketkeeping',
+];
+
+const categoryAssessments = categories.map((category) => {
+  const scores = detailedScores.filter(
+    (item) => item.category === category
+  );
+
+  const average =
+    scores.length > 0
+      ? scores.reduce(
+          (total, item) => total + item.score,
+          0
+        ) / scores.length
+      : null;
+
+  return { category, scores, average };
+});
+
 
                   const battingAverage =
                     battingScores.length > 0
@@ -180,77 +201,83 @@ export default async function Portal() {
                         ))}
                       </div>
 
-                      {scoresErrorMessage ? (
-                        <div className="notice">
-                          <p>Unable to load detailed assessment scores.</p>
-                        </div>
-                      ) : battingScores.length > 0 ? (
-                        <div
-                          style={{
-                            marginTop: '28px',
-                            marginBottom: '28px',
-                            padding: '24px',
-                            border: '1px solid #ddd',
-                            borderRadius: '12px',
-                          }}
-                        >
-                          <h4 style={{ marginTop: 0 }}>
-                            Detailed Batting Assessment
-                          </h4>
+                      
+{scoresErrorMessage ? (
+  <div className="notice">
+    <p>Unable to load detailed assessment scores.</p>
+  </div>
+) : (
+  categoryAssessments.map(({ category, scores, average }) =>
+    scores.length > 0 ? (
+      <div
+        key={category}
+        style={{
+          marginTop: '28px',
+          marginBottom: '28px',
+          padding: '24px',
+          border: '1px solid #ddd',
+          borderRadius: '12px',
+        }}
+      >
+        <h4 style={{ marginTop: 0 }}>
+          Detailed {category} Assessment
+        </h4>
 
-                          <p>
-                            <strong
-                              style={{
-                                fontSize: '28px',
-                                color: '#742533',
-                              }}
-                            >
-                              {battingAverage?.toFixed(1)} / 5
-                            </strong>
-                            {' '}
-                            <span className="muted">
-                              Detailed batting average
-                            </span>
-                          </p>
+        <p>
+          <strong
+            style={{
+              fontSize: '28px',
+              color: '#742533',
+            }}
+          >
+            {average?.toFixed(1)} / 5
+          </strong>
+          {' '}
+          <span className="muted">
+            Detailed {category.toLowerCase()} average
+          </span>
+        </p>
 
-                          {battingScores.map((item) => (
-                            <div
-                              key={item.id}
-                              style={{ marginBottom: '18px' }}
-                            >
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  gap: '12px',
-                                  marginBottom: '7px',
-                                }}
-                              >
-                                <span>{item.criterion}</span>
-                                <strong>{item.score} / 5</strong>
-                              </div>
+        {scores.map((item) => (
+          <div
+            key={item.id}
+            style={{ marginBottom: '18px' }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '12px',
+                marginBottom: '7px',
+              }}
+            >
+              <span>{item.criterion}</span>
+              <strong>{item.score} / 5</strong>
+            </div>
 
-                              <div
-                                style={{
-                                  height: '10px',
-                                  backgroundColor: '#e5e5e5',
-                                  borderRadius: '20px',
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    width: `${item.score * 20}%`,
-                                    height: '100%',
-                                    backgroundColor: '#742533',
-                                    borderRadius: '20px',
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
+            <div
+              style={{
+                height: '10px',
+                backgroundColor: '#e5e5e5',
+                borderRadius: '20px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${item.score * 20}%`,
+                  height: '100%',
+                  backgroundColor: '#742533',
+                  borderRadius: '20px',
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : null
+  )
+)}
 
                       {report.strength && (
                         <p>
