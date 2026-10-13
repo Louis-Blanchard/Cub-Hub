@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 type Player = {
   id: number;
@@ -117,6 +118,11 @@ export default function PlayerSearch({
               <th style={{ textAlign: 'left', padding: '12px' }}>
                 Player ID
               </th>
+              
+<th style={{ textAlign: 'left', padding: '12px' }}>
+  Action
+</th>
+
             </tr>
           </thead>
           <tbody>
@@ -131,6 +137,19 @@ export default function PlayerSearch({
                 <td style={{ padding: '12px', borderTop: '1px solid #ddd' }}>
                   {player.id}
                 </td>
+                
+<td style={{ padding: '12px', borderTop: '1px solid #ddd' }}>
+  <Link
+    href={`/programme-lead/edit-player/${player.id}`}
+    style={{
+      color: '#742533',
+      fontWeight: 'bold',
+    }}
+  >
+    Edit Player →
+  </Link>
+</td>
+
               </tr>
             ))}
           </tbody>
