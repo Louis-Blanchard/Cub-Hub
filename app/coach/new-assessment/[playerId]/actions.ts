@@ -85,6 +85,10 @@ export async function saveAssessmentDraft(
     criterion: string;
     score: number;
   }[] = [];
+  const observations: {
+  category: string;
+  criterion: string;
+}[] = [];
 
   for (const item of criteria) {
     const key = `score:${item.category}:${item.criterion}`;
@@ -94,9 +98,17 @@ export async function saveAssessmentDraft(
       continue;
     }
 
-    if (rawValue === 'not-observed' || rawValue === '') {
-      continue;
-    }
+   if (rawValue === 'not-observed') {
+  observations.push({
+    category: item.category,
+    criterion: item.criterion,
+  });
+  continue;
+}
+
+if (rawValue === '') {
+  continue;
+}
 
     const score = Number(rawValue);
 
@@ -241,6 +253,69 @@ for (const previous of existingScores || []) {
   }
 }
 
+
+const { data: existingObservations, error: observationReadError } =
+  await supabase
+    .from('assessment_observations')
+    .select('id, category, criterion')
+    .eq('assessment_id', assessmentId);
+
+if (observationReadError) {
+  return {
+    success: false,
+    message: 'Unable to load existing observations.',
+  };
+}
+
+// Add new Not Observed selections.
+for (const item of observations) {
+  const alreadyExists = (existingObservations || []).some(
+    (previous) =>
+      previous.category === item.category &&
+      previous.criterion === item.criterion
+  );
+
+  if (!alreadyExists) {
+    const { error } = await supabase
+      .from('assessment_observations')
+      .insert({
+        assessment_id: assessmentId,
+        category: item.category,
+        criterion: item.criterion,
+      });
+
+    if (error) {
+      return {
+        success: false,
+        message: 'Unable to save a Not Observed selection.',
+      };
+    }
+  }
+}
+
+// Remove Not Observed selections when a coach
+// changes them to a numerical score or clears them.
+for (const previous of existingObservations || []) {
+  const stillNotObserved = observations.some(
+    (item) =>
+      item.category === previous.category &&
+      item.criterion === previous.criterion
+  );
+
+  if (!stillNotObserved) {
+    const { error } = await supabase
+      .from('assessment_observations')
+      .delete()
+      .eq('id', previous.id);
+
+    if (error) {
+      return {
+        success: false,
+        message: 'Unable to update a Not Observed selection.',
+      };
+    }
+  }
+}
 
   revalidatePath(`/coach/new-assessment/${playerId}`);
 
