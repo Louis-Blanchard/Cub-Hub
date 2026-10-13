@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "../../../lib/supabase";
+import EditCoachForm from "./EditCoachForm";
 
 export default async function ManageCoachesPage() {
   const supabase = await supabaseServer();
@@ -59,6 +60,7 @@ export default async function ManageCoachesPage() {
               <tr>
                 <th style={{ textAlign: "left", padding: 12 }}>Coach Name</th>
                 <th style={{ textAlign: "left", padding: 12 }}>Status</th>
+                <th style={{ textAlign: "left", padding: 12 }}>Edit Coach</th>
               </tr>
             </thead>
 
@@ -71,6 +73,15 @@ export default async function ManageCoachesPage() {
                   <td style={{ padding: 12, borderTop: "1px solid #ddd" }}>
                     {coach.is_active ? "Active" : "Inactive"}
                   </td>
+                  <td
+  style={{
+    padding: 12,
+    borderTop: "1px solid #ddd",
+    verticalAlign: "top",
+  }}
+>
+  <EditCoachForm coach={coach} />
+</td>
                 </tr>
               ))}
             </tbody>
