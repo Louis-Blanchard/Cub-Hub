@@ -176,6 +176,7 @@ export default async function ProgrammeLeadPage() {
                       <th style={cellStyle}>Age Group</th>
                       <th style={cellStyle}>Assessment</th>
                       <th style={cellStyle}>Status</th>
+                      <th style={cellStyle}>Action</th>
                     </tr>
                   </thead>
 
@@ -216,6 +217,18 @@ export default async function ProgrammeLeadPage() {
                                 : 'Draft'}
                             </span>
                           </td>
+                          <td style={cellStyle}>
+  <Link
+    href={`/programme-lead/review/${assessment.id}`}
+    style={{
+      color: '#742533',
+      fontWeight: 600,
+      textDecoration: 'underline',
+    }}
+  >
+    Review Assessment →
+  </Link>
+</td>
                         </tr>
                       );
                     })}
