@@ -1,14 +1,15 @@
 
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '../../../lib/supabase';
-import type { EmailOtpType } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseServer } from "../../../lib/supabase";
+import type { EmailOtpType } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
 
-  const code = url.searchParams.get('code');
-  const tokenHash = url.searchParams.get('token_hash');
-  const type = url.searchParams.get('type');
+  const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type");
+  const next = url.searchParams.get("next");
 
   const supabase = await supabaseServer();
 
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       authenticated = true;
     } else {
-      console.error('Auth code exchange failed:', error.message);
+      console.error("Auth code exchange failed:", error.message);
     }
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({
@@ -31,23 +32,23 @@ export async function GET(request: NextRequest) {
     if (!error) {
       authenticated = true;
     } else {
-      console.error('OTP verification failed:', error.message);
+      console.error("OTP verification failed:", error.message);
     }
   }
 
   if (authenticated) {
-    if (type === 'invite') {
+    if (type === "invite" || next === "/set-password") {
       return NextResponse.redirect(
-        new URL('/set-password', url.origin)
+        new URL("/set-password", url.origin)
       );
     }
 
     return NextResponse.redirect(
-      new URL('/portal', url.origin)
+      new URL("/portal", url.origin)
     );
   }
 
   return NextResponse.redirect(
-    new URL('/login?error=authentication_failed', url.origin)
+    new URL("/login?error=authentication_failed", url.origin)
   );
 }
