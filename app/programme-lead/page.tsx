@@ -99,6 +99,47 @@ export default async function ProgrammeLeadPage() {
             SUFFOLK CRICKET · CUB HUB
           </p>
           <h1>Programme Lead Dashboard</h1>
+          
+<div
+  style={{
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginTop: '20px',
+    marginBottom: '24px',
+  }}
+>
+  <Link
+    href="/programme-lead/manage-players"
+    style={{
+      display: 'inline-block',
+      padding: '12px 20px',
+      backgroundColor: '#742533',
+      color: 'white',
+      borderRadius: '8px',
+      textDecoration: 'none',
+      fontWeight: 'bold',
+    }}
+  >
+    Manage Players
+  </Link>
+
+  <Link
+    href="/programme-lead/add-player"
+    style={{
+      display: 'inline-block',
+      padding: '12px 20px',
+      border: '1px solid #742533',
+      color: '#742533',
+      borderRadius: '8px',
+      textDecoration: 'none',
+      fontWeight: 'bold',
+    }}
+  >
+    + Add New Player
+  </Link>
+</div>
+
           <p>
             Review and manage player assessments
             before they are published to parents.
