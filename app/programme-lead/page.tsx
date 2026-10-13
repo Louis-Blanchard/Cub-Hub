@@ -5,6 +5,21 @@ import { supabaseServer } from '../../lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+type Assessment = {
+  id: number;
+  player_id: number;
+  period_label: string;
+  status: string;
+  created_at: string;
+};
+
+type Player = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  age_group: string;
+};
+
 export default async function ProgrammeLeadPage() {
   const supabase = await supabaseServer();
 
@@ -36,6 +51,46 @@ export default async function ProgrammeLeadPage() {
     );
   }
 
+  const {
+    data: assessmentsData,
+    error: assessmentsError,
+  } = await supabase
+    .from('assessments')
+    .select(
+      'id, player_id, period_label, status, created_at'
+    )
+    .order('created_at', { ascending: false });
+
+  const assessments = (assessmentsData || []) as Assessment[];
+
+  const playerIds = [
+    ...new Set(assessments.map((a) => a.player_id)),
+  ];
+
+  let players: Player[] = [];
+  let playersError = false;
+
+  if (playerIds.length > 0) {
+    const { data, error } = await supabase
+      .from('players')
+      .select('id, first_name, last_name, age_group')
+      .in('id', playerIds);
+
+    if (error) {
+      playersError = true;
+    } else {
+      players = (data || []) as Player[];
+    }
+  }
+
+  const draftCount = assessments.filter(
+    (a) => a.status === 'draft'
+  ).length;
+
+  const publishedCount = assessments.filter(
+    (a) => a.status === 'published'
+  ).length;
+
   return (
     <main className="wrap section">
       <div className="portalhead">
@@ -55,18 +110,128 @@ export default async function ProgrammeLeadPage() {
         </Link>
       </div>
 
-      <section className="profile">
-        <h2>Assessment Management</h2>
+      {assessmentsError || playersError ? (
+        <section className="profile">
+          <h2>Unable to load assessments</h2>
+          <p>
+            Please refresh the page or try again later.
+          </p>
+        </section>
+      ) : (
+        <>
+          <section className="profile">
+            <h2>Assessment Overview</h2>
 
-        <p>
-          Your Programme Lead access is active.
-        </p>
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                flexWrap: 'wrap',
+                marginTop: '20px',
+              }}
+            >
+              <div className="report" style={{ flex: 1 }}>
+                <h3>Draft Assessments</h3>
+                <p style={{ fontSize: '32px', fontWeight: 700 }}>
+                  {draftCount}
+                </p>
+              </div>
 
-        <p className="muted">
-          The assessment review and publishing
-          features will be added next.
-        </p>
-      </section>
+              <div className="report" style={{ flex: 1 }}>
+                <h3>Published Assessments</h3>
+                <p style={{ fontSize: '32px', fontWeight: 700 }}>
+                  {publishedCount}
+                </p>
+              </div>
+
+              <div className="report" style={{ flex: 1 }}>
+                <h3>Total Assessments</h3>
+                <p style={{ fontSize: '32px', fontWeight: 700 }}>
+                  {assessments.length}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            className="profile"
+            style={{ marginTop: '24px' }}
+          >
+            <h2>All Player Assessments</h2>
+
+            {assessments.length === 0 ? (
+              <p>No assessments have been created yet.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    marginTop: '20px',
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th style={cellStyle}>Player</th>
+                      <th style={cellStyle}>Age Group</th>
+                      <th style={cellStyle}>Assessment</th>
+                      <th style={cellStyle}>Status</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {assessments.map((assessment) => {
+                      const player = players.find(
+                        (p) => p.id === assessment.player_id
+                      );
+
+                      return (
+                        <tr key={assessment.id}>
+                          <td style={cellStyle}>
+                            {player
+                              ? `${player.first_name} ${player.last_name}`
+                              : 'Unknown player'}
+                          </td>
+
+                          <td style={cellStyle}>
+                            {player?.age_group || '—'}
+                          </td>
+
+                          <td style={cellStyle}>
+                            {assessment.period_label}
+                          </td>
+
+                          <td style={cellStyle}>
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                color:
+                                  assessment.status === 'published'
+                                    ? '#287a4b'
+                                    : '#986b12',
+                              }}
+                            >
+                              {assessment.status === 'published'
+                                ? 'Published'
+                                : 'Draft'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }
+
+const cellStyle: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '14px',
+  borderBottom: '1px solid #ddd',
+};
