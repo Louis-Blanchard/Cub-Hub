@@ -124,9 +124,7 @@ export default async function AssignPlayersPage() {
         ))}
       </ul>
 
-      <p>
-        Player assignment controls will be added next.
-      </p>
+  
     </main>
   );
 }
