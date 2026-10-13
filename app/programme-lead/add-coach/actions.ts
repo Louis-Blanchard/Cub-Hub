@@ -54,10 +54,18 @@ export async function createCoach(formData: FormData) {
       },
     });
 
-  if (inviteError || !data.user) {
-    console.error("Coach invitation failed:", inviteError?.message);
-    throw new Error("Unable to send coach invitation.");
+if (inviteError || !data.user) {
+  console.error("Coach invitation failed:", inviteError?.message);
+
+  const isRateLimited =
+    inviteError?.message?.toLowerCase().includes("rate limit");
+
+  if (isRateLimited) {
+    redirect("/programme-lead/add-coach?error=email_limit");
   }
+
+  redirect("/programme-lead/add-coach?error=invitation_failed");
+}
 
   const { error: coachError } = await admin
     .from("coaches")
