@@ -118,9 +118,22 @@ export default async function NewAssessmentPage() {
 
               <p>{player.age_group} · Cub Hub</p>
 
-              <p className="muted">
-                Assessment entry form coming next.
-              </p>
+<Link
+  href={`/coach/new-assessment/${player.id}`}
+  style={{
+    display: 'inline-block',
+    marginTop: '12px',
+    padding: '12px 20px',
+    backgroundColor: '#742533',
+    color: '#ffffff',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    fontWeight: 600,
+  }}
+>
+  Start Assessment →
+</Link>
+              
             </div>
           ))
         )}
