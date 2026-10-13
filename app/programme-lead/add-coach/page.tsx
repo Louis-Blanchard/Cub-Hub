@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "../../../lib/supabase";
+import { createCoach } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function AddCoachPage() {
 <section className="profile">
   <h2>Coach Details</h2>
 
-  <form>
+  <form action={createCoach}>
     <div style={{ marginBottom: "20px" }}>
       <label htmlFor="full_name">
         Coach Full Name
@@ -95,13 +96,20 @@ export default async function AddCoachPage() {
       coach so they can set up their own password.
     </p>
 
-    <button type="button" disabled>
-      Create Coach Account
-    </button>
-
-    <p>
-      Account creation will be enabled in the next step.
-    </p>
+   <button
+  type="submit"
+  style={{
+    backgroundColor: "#742533",
+    color: "white",
+    padding: "12px 24px",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: "bold",
+    cursor: "pointer",
+  }}
+>
+  Create Coach Account
+</button>
   </form>
 </section>
 
