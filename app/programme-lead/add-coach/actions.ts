@@ -3,7 +3,7 @@
 
 import { redirect } from "next/navigation";
 import { supabaseServer } from "../../../lib/supabase";
-import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export async function createCoach(formData: FormData) {
   const supabase = await supabaseServer();
