@@ -171,15 +171,6 @@ const categoryAssessments = categories.map((category) => {
   return { category, scores, average };
 });
 
-
-                  const battingAverage =
-                    battingScores.length > 0
-                      ? battingScores.reduce(
-                          (total, item) => total + item.score,
-                          0
-                        ) / battingScores.length
-                      : null;
-
                   return (
                     <div className="report" key={report.id}>
                       <h3>{report.period_label}</h3>
