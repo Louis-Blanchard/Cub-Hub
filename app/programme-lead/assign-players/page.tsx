@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "../../../lib/supabase";
+import AssignPlayerForm from "./AssignPlayerForm";
 
 export default async function AssignPlayersPage() {
   const supabase = await supabaseServer();
@@ -66,7 +67,10 @@ export default async function AssignPlayersPage() {
       <p>
         Manage which Cub Hub players are assigned to each coach.
       </p>
-
+<AssignPlayerForm
+  coaches={coaches ?? []}
+  players={players ?? []}
+/>
       <h2>Active Coaches ({coaches?.length ?? 0})</h2>
 
       <ul>
