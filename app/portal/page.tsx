@@ -24,6 +24,14 @@ type Assessment = {
   next_step_2: string | null;
 };
 
+type AssessmentScore = {
+  id: number;
+  assessment_id: number;
+  category: string;
+  criterion: string;
+  score: number;
+};
+
 export default async function Portal() {
   const supabase = await supabaseServer();
 
@@ -45,7 +53,9 @@ export default async function Portal() {
   const playerIds = safePlayers.map((player) => player.id);
 
   let assessments: Assessment[] = [];
+  let assessmentScores: AssessmentScore[] = [];
   let assessmentErrorMessage = false;
+  let scoresErrorMessage = false;
 
   if (playerIds.length > 0) {
     const { data, error } = await supabase
@@ -62,6 +72,23 @@ export default async function Portal() {
       assessmentErrorMessage = true;
     } else {
       assessments = (data || []) as Assessment[];
+    }
+
+    const assessmentIds = assessments.map((report) => report.id);
+
+    if (assessmentIds.length > 0) {
+      const { data: scoreData, error: scoreError } = await supabase
+        .from('assessment_scores')
+        .select('id, assessment_id, category, criterion, score')
+        .in('assessment_id', assessmentIds)
+        .order('id', { ascending: true });
+
+      if (scoreError) {
+        console.error('Detailed scores query failed:', scoreError.message);
+        scoresErrorMessage = true;
+      } else {
+        assessmentScores = (scoreData || []) as AssessmentScore[];
+      }
     }
   }
 
@@ -115,45 +142,141 @@ export default async function Portal() {
                   <p>No reports have been published for this player yet.</p>
                 </div>
               ) : (
-                reports.map((report) => (
-                  <div className="report" key={report.id}>
-                    <h3>{report.period_label}</h3>
+                reports.map((report) => {
+                  const detailedScores = assessmentScores.filter(
+                    (item) => item.assessment_id === report.id
+                  );
 
-                    <div className="cards scores">
-                      {[
-                        ['Batting', report.batting_average],
-                        ['Bowling', report.bowling_average],
-                        ['Fielding', report.fielding_average],
-                      ].map(([label, value]) => (
-                        <div key={String(label)}>
-                          <small>{label}</small>
-                          <strong>
-                            {typeof value === 'number'
-                              ? `${value.toFixed(1)} / 5`
-                              : 'Not observed'}
-                          </strong>
+                  const battingScores = detailedScores.filter(
+                    (item) => item.category === 'Batting'
+                  );
+
+                  const battingAverage =
+                    battingScores.length > 0
+                      ? battingScores.reduce(
+                          (total, item) => total + item.score,
+                          0
+                        ) / battingScores.length
+                      : null;
+
+                  return (
+                    <div className="report" key={report.id}>
+                      <h3>{report.period_label}</h3>
+
+                      <div className="cards scores">
+                        {[
+                          ['Batting', report.batting_average],
+                          ['Bowling', report.bowling_average],
+                          ['Fielding', report.fielding_average],
+                        ].map(([label, value]) => (
+                          <div key={String(label)}>
+                            <small>{label}</small>
+                            <strong>
+                              {typeof value === 'number'
+                                ? `${value.toFixed(1)} / 5`
+                                : 'Not observed'}
+                            </strong>
+                          </div>
+                        ))}
+                      </div>
+
+                      {scoresErrorMessage ? (
+                        <div className="notice">
+                          <p>Unable to load detailed assessment scores.</p>
                         </div>
-                      ))}
+                      ) : battingScores.length > 0 ? (
+                        <div
+                          style={{
+                            marginTop: '28px',
+                            marginBottom: '28px',
+                            padding: '24px',
+                            border: '1px solid #ddd',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          <h4 style={{ marginTop: 0 }}>
+                            Detailed Batting Assessment
+                          </h4>
+
+                          <p>
+                            <strong
+                              style={{
+                                fontSize: '28px',
+                                color: '#742533',
+                              }}
+                            >
+                              {battingAverage?.toFixed(1)} / 5
+                            </strong>
+                            {' '}
+                            <span className="muted">
+                              Detailed batting average
+                            </span>
+                          </p>
+
+                          {battingScores.map((item) => (
+                            <div
+                              key={item.id}
+                              style={{ marginBottom: '18px' }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  gap: '12px',
+                                  marginBottom: '7px',
+                                }}
+                              >
+                                <span>{item.criterion}</span>
+                                <strong>{item.score} / 5</strong>
+                              </div>
+
+                              <div
+                                style={{
+                                  height: '10px',
+                                  backgroundColor: '#e5e5e5',
+                                  borderRadius: '20px',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: `${item.score * 20}%`,
+                                    height: '100%',
+                                    backgroundColor: '#742533',
+                                    borderRadius: '20px',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {report.strength && (
+                        <p>
+                          <b>Strength:</b> {report.strength}
+                        </p>
+                      )}
+
+                      {report.next_step_1 && (
+                        <p>
+                          <b>Next step:</b> {report.next_step_1}
+                        </p>
+                      )}
+
+                      {report.next_step_2 && (
+                        <p>
+                          <b>Another goal:</b> {report.next_step_2}
+                        </p>
+                      )}
+
+                      <p className="muted">
+                        Scores reflect observed development, not a
+                        ranking of children.
+                      </p>
                     </div>
-
-                    {report.strength && (
-                      <p><b>Strength:</b> {report.strength}</p>
-                    )}
-
-                    {report.next_step_1 && (
-                      <p><b>Next step:</b> {report.next_step_1}</p>
-                    )}
-
-                    {report.next_step_2 && (
-                      <p><b>Another goal:</b> {report.next_step_2}</p>
-                    )}
-
-                    <p className="muted">
-                      Scores reflect observed development, not a
-                      ranking of children.
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </section>
           );
