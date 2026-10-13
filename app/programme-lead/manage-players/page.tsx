@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '../../../lib/supabase';
+import PlayerSearch from './PlayerSearch';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -64,25 +66,19 @@ export default async function ManagePlayersPage() {
       >
         <h2>Registered Players</h2>
 
-        {playersError ? (
-          <p>
-            Unable to load players. Please try again.
-          </p>
-        ) : !players || players.length === 0 ? (
-          <p>No players found.</p>
-        ) : (
-          <>
-            <p>
-              Total players: <strong>{players.length}</strong>
-            </p>
+  
+{playersError ? (
+  <p>
+    Unable to load players. Please try again.
+  </p>
+) : !players || players.length === 0 ? (
+  <p>No players found.</p>
+) : (
+  <>
+    <PlayerSearch players={players} />
+  </>
+)}
 
-            <div style={{ overflowX: 'auto' }}>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  marginTop: '20px',
-                }}
               >
                 <thead>
                   <tr>
