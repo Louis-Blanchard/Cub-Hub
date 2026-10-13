@@ -44,14 +44,38 @@ export default async function Portal() {
     redirect('/login');
   }
 
-  const { data: players, error: playerError } = await supabase
+
+const { data: parentLinks, error: parentLinkError } =
+  await supabase
+    .from('parent_players')
+    .select('player_id')
+    .eq('parent_id', user.id);
+
+const linkedPlayerIds = (parentLinks || []).map(
+  (link) => link.player_id as number
+);
+
+let safePlayers: Player[] = [];
+let playerError = Boolean(parentLinkError);
+
+if (!playerError && linkedPlayerIds.length > 0) {
+  const { data: players, error } = await supabase
     .from('players')
     .select('id, first_name, last_name, age_group')
+    .in('id', linkedPlayerIds)
     .order('first_name');
 
-  const safePlayers = (players || []) as Player[];
-  const playerIds = safePlayers.map((player) => player.id);
+  if (error) {
+    console.error('Player query failed:', error.message);
+    playerError = true;
+  } else {
+    safePlayers = (players || []) as Player[];
+  }
+}
 
+const playerIds = safePlayers.map((player) => player.id);
+
+  
   let assessments: Assessment[] = [];
   let assessmentScores: AssessmentScore[] = [];
   let assessmentErrorMessage = false;
