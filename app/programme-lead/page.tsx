@@ -123,6 +123,21 @@ export default async function ProgrammeLeadPage() {
   >
     Manage Players
   </Link>
+  <a
+  href="/programme-lead/assign-players"
+  style={{
+    display: "inline-block",
+    padding: "12px 20px",
+    backgroundColor: "#d0a22a",
+    color: "#172f40",
+    fontWeight: "bold",
+    borderRadius: 8,
+    textDecoration: "none",
+    margin: 8,
+  }}
+>
+  Manage Coach Assignments
+</a>
 
   <Link
     href="/programme-lead/add-player"
