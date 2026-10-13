@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '../../../../lib/supabase';
+import { publishAssessment } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,8 +75,8 @@ export default async function AssessmentReviewPage({
     await supabase
       .from('assessments')
       .select(
-        'id, player_id, period_label, status, strength, next_step_1, next_step_2'
-      )
+  'id, player_id, period_label, status, draft_version, strength, next_step_1, next_step_2'
+)
       .eq('id', id)
       .maybeSingle();
 
@@ -131,7 +132,32 @@ export default async function AssessmentReviewPage({
       </main>
     );
   }
+  async function publish(formData: FormData) {
+    'use server';
 
+    const confirmation = formData.get('confirmation');
+
+    if (confirmation !== 'yes') {
+      redirect(
+        `/programme-lead/review/${id}?error=confirmation`
+      );
+    }
+
+    const result = await publishAssessment(
+      id,
+      assessment.draft_version
+    );
+
+    if (result.success) {
+      redirect(
+        `/programme-lead/review/${id}?published=1`
+      );
+    }
+
+    redirect(
+      `/programme-lead/review/${id}?error=publish`
+    );
+  }
   const player = playerResult.data;
   const scores = (scoresResult.data || []) as Score[];
   const observations =
@@ -285,17 +311,69 @@ export default async function AssessmentReviewPage({
         </div>
       </section>
 
-      <section
+           <section
         className="profile"
         style={{ marginTop: '24px' }}
       >
         <h2>Publishing</h2>
 
-        <p className="muted">
-          This page is currently read-only.
-          Publishing controls will be added after
-          the review page has been tested.
-        </p>
+        {assessment.status === 'published' ? (
+          <p>
+            This assessment has been published
+            and is now available to linked parents.
+          </p>
+        ) : (
+          <>
+            <p>
+              Review all assessment scores and
+              development feedback before publishing.
+            </p>
+
+            <p className="muted">
+              Publishing makes this assessment visible
+              to linked parents and prevents further edits.
+            </p>
+
+            <form action={publish}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  margin: '20px 0',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  name="confirmation"
+                  value="yes"
+                  required
+                />
+
+                <span>
+                  I confirm that I have reviewed this
+                  assessment and it is ready to be
+                  shared with parents.
+                </span>
+              </label>
+
+              <button
+                type="submit"
+                style={{
+                  backgroundColor: '#742533',
+                  color: '#ffffff',
+                  padding: '14px 24px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Publish Assessment
+              </button>
+            </form>
+          </>
+        )}
       </section>
     </main>
   );
