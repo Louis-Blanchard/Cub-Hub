@@ -36,7 +36,11 @@ export default async function AssignPlayersPage() {
     .order("last_name")
     .order("first_name");
 
-  if (coachesError || playersError) {
+  const { data: assignments, error: assignmentsError } =
+  await supabase
+    .from("coach_players")
+    .select("coach_id, player_id");
+  if (coachesError || playersError || assignmentsError) {
     return (
       <main style={{ padding: 30 }}>
         <h1>Coach Assignments</h1>
@@ -66,10 +70,36 @@ export default async function AssignPlayersPage() {
       <h2>Active Coaches ({coaches?.length ?? 0})</h2>
 
       <ul>
-        {coaches?.map((coach) => (
-          <li key={coach.id}>{coach.full_name}</li>
-        ))}
-      </ul>
+  {coaches?.map((coach) => {
+    const assignedPlayers = players?.filter((player) =>
+      assignments?.some(
+        (assignment) =>
+          assignment.coach_id === coach.id &&
+          assignment.player_id === player.id
+      )
+    );
+
+    return (
+      <li key={coach.id} style={{ marginBottom: 20 }}>
+        <strong>{coach.full_name}</strong>
+
+        {assignedPlayers?.length ? (
+          <ul>
+            {assignedPlayers.map((player) => (
+              <li key={player.id}>
+                {player.first_name} {player.last_name}
+                {" — "}
+                {player.age_group}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No players assigned yet.</p>
+        )}
+      </li>
+    );
+  })}
+</ul>
 
       <h2>Registered Players ({players?.length ?? 0})</h2>
 
