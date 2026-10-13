@@ -44,14 +44,67 @@ export default async function AddCoachPage() {
         Suffolk Cricket Cub Hub programme.
       </p>
 
-      <section className="profile">
-        <h2>Coach Details</h2>
+      
+<section className="profile">
+  <h2>Coach Details</h2>
 
-        <p>
-          The form for entering the coach's name
-          and email address will appear here next.
-        </p>
-      </section>
+  <form>
+    <div style={{ marginBottom: "20px" }}>
+      <label htmlFor="full_name">
+        Coach Full Name
+      </label>
+
+      <input
+        id="full_name"
+        name="full_name"
+        type="text"
+        placeholder="e.g. John Smith"
+        required
+        maxLength={100}
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "12px",
+          marginTop: "8px",
+        }}
+      />
+    </div>
+
+    <div style={{ marginBottom: "20px" }}>
+      <label htmlFor="email">
+        Coach Email Address
+      </label>
+
+      <input
+        id="email"
+        name="email"
+        type="email"
+        placeholder="e.g. coach@example.com"
+        required
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "12px",
+          marginTop: "8px",
+        }}
+      />
+    </div>
+
+    <p>
+      A secure invitation will be sent to the
+      coach so they can set up their own password.
+    </p>
+
+    <button type="button" disabled>
+      Create Coach Account
+    </button>
+
+    <p>
+      Account creation will be enabled in the next step.
+    </p>
+  </form>
+</section>
+
     </main>
   );
 }
