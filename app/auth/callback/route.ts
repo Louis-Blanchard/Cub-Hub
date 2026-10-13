@@ -12,14 +12,16 @@ export async function GET(request: NextRequest) {
 
   const supabase = await supabaseServer();
 
+  let authenticated = false;
+
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(new URL('/portal', url.origin));
+      authenticated = true;
+    } else {
+      console.error('Auth code exchange failed:', error.message);
     }
-
-    console.error('Auth code exchange failed:', error.message);
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
@@ -27,10 +29,22 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
-      return NextResponse.redirect(new URL('/portal', url.origin));
+      authenticated = true;
+    } else {
+      console.error('OTP verification failed:', error.message);
+    }
+  }
+
+  if (authenticated) {
+    if (type === 'invite') {
+      return NextResponse.redirect(
+        new URL('/set-password', url.origin)
+      );
     }
 
-    console.error('OTP verification failed:', error.message);
+    return NextResponse.redirect(
+      new URL('/portal', url.origin)
+    );
   }
 
   return NextResponse.redirect(
