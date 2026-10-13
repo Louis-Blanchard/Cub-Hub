@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '../../../../lib/supabase';
+import { saveAssessmentDraft } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -121,6 +122,29 @@ export default async function PlayerAssessmentPage({
     .order('display_order', { ascending: true });
 
   const criteria = (data || []) as Criterion[];
+  
+const { data: existingAssessment } = await supabase
+  .from('assessments')
+  .select('id, status')
+  .eq('player_id', numericPlayerId)
+  .eq('period_label', 'Winter 2026 - Final Assessment')
+  .maybeSingle();
+
+let savedScores: {
+  category: string;
+  criterion: string;
+  score: number;
+}[] = [];
+
+if (existingAssessment?.status === 'draft') {
+  const { data: previousScores } = await supabase
+    .from('assessment_scores')
+    .select('category, criterion, score')
+    .eq('assessment_id', existingAssessment.id);
+
+  savedScores = previousScores || [];
+}
+
 
   return (
     <main className="wrap section">
