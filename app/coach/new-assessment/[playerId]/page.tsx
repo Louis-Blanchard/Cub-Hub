@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '../../../../lib/supabase';
 import { saveAssessmentDraft } from './actions';
+import FeedbackFields from './FeedbackFields';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,8 @@ type Criterion = {
   score_4: string;
   score_5: string;
 };
+
+const PERIOD_LABEL = 'Winter 2026 - Final Assessment';
 
 const categories = [
   'Batting',
@@ -66,11 +69,16 @@ export default async function PlayerAssessmentPage({
     );
   }
 
-  if (!Number.isSafeInteger(numericPlayerId) || numericPlayerId <= 0) {
+  if (
+    !Number.isSafeInteger(numericPlayerId) ||
+    numericPlayerId <= 0
+  ) {
     return (
       <main className="wrap section">
         <h1>Invalid player</h1>
-        <Link href="/coach/new-assessment">Back to players</Link>
+        <Link href="/coach/new-assessment">
+          Back to players
+        </Link>
       </main>
     );
   }
@@ -87,23 +95,30 @@ export default async function PlayerAssessmentPage({
     return (
       <main className="wrap section">
         <h1>Player not available</h1>
-        <p>This player is not assigned to your coach account.</p>
-        <Link href="/coach/new-assessment">Back to players</Link>
+        <p>
+          This player is not assigned to your coach account.
+        </p>
+        <Link href="/coach/new-assessment">
+          Back to players
+        </Link>
       </main>
     );
   }
 
-  const { data: player, error: playerError } = await supabase
-    .from('players')
-    .select('first_name, last_name, age_group')
-    .eq('id', numericPlayerId)
-    .maybeSingle();
+  const { data: player, error: playerError } =
+    await supabase
+      .from('players')
+      .select('first_name, last_name, age_group')
+      .eq('id', numericPlayerId)
+      .maybeSingle();
 
   if (playerError || !player) {
     return (
       <main className="wrap section">
         <h1>Unable to load player</h1>
-        <Link href="/coach/new-assessment">Back to players</Link>
+        <Link href="/coach/new-assessment">
+          Back to players
+        </Link>
       </main>
     );
   }
@@ -121,9 +136,11 @@ export default async function PlayerAssessmentPage({
   const { data: existingAssessment, error: assessmentError } =
     await supabase
       .from('assessments')
-      .select('id, status')
+      .select(
+        'id, status, draft_version, strength, next_step_1, next_step_2'
+      )
       .eq('player_id', numericPlayerId)
-      .eq('period_label', 'Winter 2026 - Final Assessment')
+      .eq('period_label', PERIOD_LABEL)
       .maybeSingle();
 
   let savedScores: {
@@ -132,54 +149,49 @@ export default async function PlayerAssessmentPage({
     score: number;
   }[] = [];
 
-let savedObservations: {
-  category: string;
-  criterion: string;
-}[] = [];
-
-let observationsError = false;
-
-if (existingAssessment?.status === 'draft') {
-  const { data, error } = await supabase
-    .from('assessment_observations')
-    .select('category, criterion')
-    .eq('assessment_id', existingAssessment.id);
-
-  if (error) {
-    observationsError = true;
-    console.error(
-      'Unable to load observations:',
-      error.message
-    );
-  } else {
-    savedObservations = data || [];
-  }
-}
+  let savedObservations: {
+    category: string;
+    criterion: string;
+  }[] = [];
 
   let scoresError = false;
+  let observationsError = false;
 
   if (existingAssessment?.status === 'draft') {
-    const { data, error } = await supabase
-      .from('assessment_scores')
-      .select('category, criterion, score')
-      .eq('assessment_id', existingAssessment.id);
+    const { data: scores, error: scoreLoadError } =
+      await supabase
+        .from('assessment_scores')
+        .select('category, criterion, score')
+        .eq('assessment_id', existingAssessment.id);
 
-    if (error) {
+    if (scoreLoadError) {
       scoresError = true;
     } else {
-      savedScores = data || [];
+      savedScores = scores || [];
+    }
+
+    const {
+      data: observations,
+      error: observationLoadError,
+    } = await supabase
+      .from('assessment_observations')
+      .select('category, criterion')
+      .eq('assessment_id', existingAssessment.id);
+
+    if (observationLoadError) {
+      observationsError = true;
+    } else {
+      savedObservations = observations || [];
     }
   }
 
-
-const canEdit =
-  !criteriaError &&
-  criteria.length > 0 &&
-  !assessmentError &&
-  !scoresError &&
-  !observationsError &&
-  existingAssessment?.status !== 'published';
-
+  const canEdit =
+    !criteriaError &&
+    criteria.length > 0 &&
+    !assessmentError &&
+    !scoresError &&
+    !observationsError &&
+    existingAssessment?.status !== 'published';
 
   async function saveDraft(formData: FormData) {
     'use server';
@@ -251,10 +263,14 @@ const canEdit =
           </div>
         )}
 
-        {criteriaError || assessmentError || scoresError || observationsError ? (
+        {criteriaError ||
+        assessmentError ||
+        scoresError ||
+        observationsError ? (
           <div className="notice">
             <p>
-              Unable to load the assessment. Please try again.
+              Unable to load the assessment.
+              Please try again.
             </p>
           </div>
         ) : existingAssessment?.status === 'published' ? (
@@ -270,6 +286,12 @@ const canEdit =
           </div>
         ) : canEdit ? (
           <form action={saveDraft}>
+            <input
+              type="hidden"
+              name="draft_version"
+              value={existingAssessment?.draft_version ?? 0}
+            />
+
             {categories.map((category) => {
               const categoryCriteria = criteria.filter(
                 (item) => item.category === category
@@ -288,13 +310,15 @@ const canEdit =
                         score.category === item.category &&
                         score.criterion === item.criterion
                     );
-                  
-const wasNotObserved = savedObservations.some(
-  (observation) =>
-    observation.category === item.category &&
-    observation.criterion === item.criterion
-);
 
+                    const wasNotObserved =
+                      savedObservations.some(
+                        (observation) =>
+                          observation.category ===
+                            item.category &&
+                          observation.criterion ===
+                            item.criterion
+                      );
 
                     const fieldName =
                       `score:${item.category}:${item.criterion}`;
@@ -352,13 +376,12 @@ const wasNotObserved = savedObservations.some(
                             cursor: 'pointer',
                           }}
                         >
-                          
-<input
-  type="radio"
-  name={fieldName}
-  value="not-observed"
-  defaultChecked={wasNotObserved}
-/>
+                          <input
+                            type="radio"
+                            name={fieldName}
+                            value="not-observed"
+                            defaultChecked={wasNotObserved}
+                          />
 
                           <span>Not Observed</span>
                         </label>
@@ -369,6 +392,22 @@ const wasNotObserved = savedObservations.some(
               );
             })}
 
+            <FeedbackFields
+              criteria={criteria.map((item) => ({
+                category: item.category,
+                criterion: item.criterion,
+              }))}
+              initialStrength={
+                existingAssessment?.strength ?? ''
+              }
+              initialGoal1={
+                existingAssessment?.next_step_1 ?? ''
+              }
+              initialGoal2={
+                existingAssessment?.next_step_2 ?? ''
+              }
+            />
+
             <div
               style={{
                 position: 'sticky',
@@ -378,6 +417,7 @@ const wasNotObserved = savedObservations.some(
                 border: '1px solid #ddd',
                 borderRadius: '12px',
                 marginTop: '32px',
+                zIndex: 10,
               }}
             >
               <button
