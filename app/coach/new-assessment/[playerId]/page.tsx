@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type PageProps = {
   params: Promise<{ playerId: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 };
 
 type Criterion = {
@@ -31,8 +32,10 @@ const categories = [
 
 export default async function PlayerAssessmentPage({
   params,
+  searchParams,
 }: PageProps) {
   const { playerId } = await params;
+  const { saved, error: saveError } = await searchParams;
   const numericPlayerId = Number(playerId);
 
   const supabase = await supabaseServer();
@@ -67,14 +70,11 @@ export default async function PlayerAssessmentPage({
     return (
       <main className="wrap section">
         <h1>Invalid player</h1>
-        <Link href="/coach/new-assessment">
-          Return to player selection
-        </Link>
+        <Link href="/coach/new-assessment">Back to players</Link>
       </main>
     );
   }
 
-  // Check that this player is assigned to this coach.
   const { data: assignment, error: assignmentError } =
     await supabase
       .from('coach_players')
@@ -87,19 +87,15 @@ export default async function PlayerAssessmentPage({
     return (
       <main className="wrap section">
         <h1>Player not available</h1>
-        <p>
-          This player is not assigned to your coach account.
-        </p>
-        <Link href="/coach/new-assessment">
-          Return to player selection
-        </Link>
+        <p>This player is not assigned to your coach account.</p>
+        <Link href="/coach/new-assessment">Back to players</Link>
       </main>
     );
   }
 
   const { data: player, error: playerError } = await supabase
     .from('players')
-    .select('id, first_name, last_name, age_group')
+    .select('first_name, last_name, age_group')
     .eq('id', numericPlayerId)
     .maybeSingle();
 
@@ -107,44 +103,77 @@ export default async function PlayerAssessmentPage({
     return (
       <main className="wrap section">
         <h1>Unable to load player</h1>
-        <Link href="/coach/new-assessment">
-          Return to player selection
-        </Link>
+        <Link href="/coach/new-assessment">Back to players</Link>
       </main>
     );
   }
 
-  const { data, error: criteriaError } = await supabase
-    .from('assessment_criteria')
-    .select(
-      'id, category, criterion, display_order, score_1, score_2, score_3, score_4, score_5'
-    )
-    .order('display_order', { ascending: true });
+  const { data: criteriaData, error: criteriaError } =
+    await supabase
+      .from('assessment_criteria')
+      .select(
+        'id, category, criterion, display_order, score_1, score_2, score_3, score_4, score_5'
+      )
+      .order('display_order', { ascending: true });
 
-  const criteria = (data || []) as Criterion[];
-  
-const { data: existingAssessment } = await supabase
-  .from('assessments')
-  .select('id, status')
-  .eq('player_id', numericPlayerId)
-  .eq('period_label', 'Winter 2026 - Final Assessment')
-  .maybeSingle();
+  const criteria = (criteriaData || []) as Criterion[];
 
-let savedScores: {
-  category: string;
-  criterion: string;
-  score: number;
-}[] = [];
+  const { data: existingAssessment, error: assessmentError } =
+    await supabase
+      .from('assessments')
+      .select('id, status')
+      .eq('player_id', numericPlayerId)
+      .eq('period_label', 'Winter 2026 - Final Assessment')
+      .maybeSingle();
 
-if (existingAssessment?.status === 'draft') {
-  const { data: previousScores } = await supabase
-    .from('assessment_scores')
-    .select('category, criterion, score')
-    .eq('assessment_id', existingAssessment.id);
+  let savedScores: {
+    category: string;
+    criterion: string;
+    score: number;
+  }[] = [];
 
-  savedScores = previousScores || [];
-}
+  let scoresError = false;
 
+  if (existingAssessment?.status === 'draft') {
+    const { data, error } = await supabase
+      .from('assessment_scores')
+      .select('category, criterion, score')
+      .eq('assessment_id', existingAssessment.id);
+
+    if (error) {
+      scoresError = true;
+    } else {
+      savedScores = data || [];
+    }
+  }
+
+  const canEdit =
+    !criteriaError &&
+    criteria.length > 0 &&
+    !assessmentError &&
+    !scoresError &&
+    existingAssessment?.status !== 'published';
+
+  async function saveDraft(formData: FormData) {
+    'use server';
+
+    const result = await saveAssessmentDraft(
+      numericPlayerId,
+      formData
+    );
+
+    if (result.success) {
+      redirect(
+        `/coach/new-assessment/${numericPlayerId}?saved=1`
+      );
+    }
+
+    redirect(
+      `/coach/new-assessment/${numericPlayerId}?error=${encodeURIComponent(
+        result.message
+      )}`
+    );
+  }
 
   return (
     <main className="wrap section">
@@ -167,7 +196,7 @@ if (existingAssessment?.status === 'draft') {
       </div>
 
       <section className="profile">
-        <h2>Development Assessment</h2>
+        <h2>Winter 2026 – Final Assessment</h2>
 
         <p>
           Select the score that best reflects the
@@ -175,91 +204,167 @@ if (existingAssessment?.status === 'draft') {
         </p>
 
         <p className="muted">
-          This is a preview of the assessment form.
-          Scores cannot be saved yet.
+          You can save a partially completed assessment
+          and return later.
         </p>
 
-        {criteriaError ? (
+        {saved === '1' && (
           <div className="notice">
-            <p>Unable to load scoring criteria.</p>
+            <p>
+              <strong>Draft saved successfully!</strong>
+            </p>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="notice">
+            <p>
+              <strong>Unable to save:</strong> {saveError}
+            </p>
+          </div>
+        )}
+
+        {criteriaError || assessmentError || scoresError ? (
+          <div className="notice">
+            <p>
+              Unable to load the assessment. Please try again.
+            </p>
+          </div>
+        ) : existingAssessment?.status === 'published' ? (
+          <div className="notice">
+            <h3>Assessment already published</h3>
+            <p>
+              This assessment can no longer be edited.
+            </p>
           </div>
         ) : criteria.length === 0 ? (
           <div className="notice">
             <p>No scoring criteria are available.</p>
           </div>
-        ) : (
-          categories.map((category) => {
-            const categoryCriteria = criteria.filter(
-              (item) => item.category === category
-            );
+        ) : canEdit ? (
+          <form action={saveDraft}>
+            {categories.map((category) => {
+              const categoryCriteria = criteria.filter(
+                (item) => item.category === category
+              );
 
-            return (
-              <section
-                key={category}
-                style={{ marginTop: '32px' }}
-              >
-                <h2>{category}</h2>
+              return (
+                <section
+                  key={category}
+                  style={{ marginTop: '32px' }}
+                >
+                  <h2>{category}</h2>
 
-                {categoryCriteria.map((item) => (
-                  <div
-                    className="report"
-                    key={item.id}
-                    style={{ marginBottom: '20px' }}
-                  >
-                    <h3>{item.criterion}</h3>
+                  {categoryCriteria.map((item) => {
+                    const previous = savedScores.find(
+                      (score) =>
+                        score.category === item.category &&
+                        score.criterion === item.criterion
+                    );
 
-                    {[
-                      item.score_1,
-                      item.score_2,
-                      item.score_3,
-                      item.score_4,
-                      item.score_5,
-                    ].map((description, index) => (
-                      <label
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '12px',
-                          padding: '12px 0',
-                          cursor: 'pointer',
-                        }}
+                    const fieldName =
+                      `score:${item.category}:${item.criterion}`;
+
+                    return (
+                      <div
+                        className="report"
+                        key={item.id}
+                        style={{ marginBottom: '20px' }}
                       >
-                        <input
-                          type="radio"
-                          name={`criterion-${item.id}`}
-                          value={index + 1}
-                          style={{ marginTop: '5px' }}
-                        />
+                        <h3>{item.criterion}</h3>
 
-                        <span>
-                          <strong>{index + 1} — </strong>
-                          {description}
-                        </span>
-                      </label>
-                    ))}
+                        {[
+                          item.score_1,
+                          item.score_2,
+                          item.score_3,
+                          item.score_4,
+                          item.score_5,
+                        ].map((description, index) => {
+                          const value = index + 1;
 
-                    <label
-                      style={{
-                        display: 'flex',
-                        gap: '12px',
-                        padding: '12px 0',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name={`criterion-${item.id}`}
-                        value="not-observed"
-                      />
-                      <span>Not Observed</span>
-                    </label>
-                  </div>
-                ))}
-              </section>
-            );
-          })
-        )}
+                          return (
+                            <label
+                              key={value}
+                              style={{
+                                display: 'flex',
+                                gap: '12px',
+                                padding: '12px 0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name={fieldName}
+                                value={value}
+                                defaultChecked={
+                                  previous?.score === value
+                                }
+                                style={{ marginTop: '5px' }}
+                              />
+
+                              <span>
+                                <strong>{value} — </strong>
+                                {description}
+                              </span>
+                            </label>
+                          );
+                        })}
+
+                        <label
+                          style={{
+                            display: 'flex',
+                            gap: '12px',
+                            padding: '12px 0',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={fieldName}
+                            value="not-observed"
+                          />
+                          <span>Not Observed</span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </section>
+              );
+            })}
+
+            <div
+              style={{
+                position: 'sticky',
+                bottom: '12px',
+                background: '#ffffff',
+                padding: '20px',
+                border: '1px solid #ddd',
+                borderRadius: '12px',
+                marginTop: '32px',
+              }}
+            >
+              <button
+                type="submit"
+                style={{
+                  padding: '14px 28px',
+                  backgroundColor: '#742533',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Save Draft
+              </button>
+
+              <p className="muted">
+                This assessment will not be visible
+                to parents until published.
+              </p>
+            </div>
+          </form>
+        ) : null}
       </section>
     </main>
   );
