@@ -1,0 +1,91 @@
+
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { supabaseServer } from "../../../lib/supabase";
+
+export default async function AssignPlayersPage() {
+  const supabase = await supabaseServer();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: lead, error: leadError } = await supabase
+    .from("programme_leads")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (leadError || !lead) {
+    redirect("/portal");
+  }
+
+  const { data: coaches, error: coachesError } = await supabase
+    .from("coaches")
+    .select("id, full_name, is_active")
+    .eq("is_active", true)
+    .order("full_name");
+
+  const { data: players, error: playersError } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, age_group")
+    .order("last_name")
+    .order("first_name");
+
+  if (coachesError || playersError) {
+    return (
+      <main style={{ padding: 30 }}>
+        <h1>Coach Assignments</h1>
+        <p>Unable to load coaches or players.</p>
+      </main>
+    );
+  }
+
+  return (
+    <main
+      style={{
+        maxWidth: 900,
+        margin: "40px auto",
+        padding: 24,
+      }}
+    >
+      <Link href="/programme-lead">
+        ← Back to Programme Lead Dashboard
+      </Link>
+
+      <h1>Assign Players to Coaches</h1>
+
+      <p>
+        Manage which Cub Hub players are assigned to each coach.
+      </p>
+
+      <h2>Active Coaches ({coaches?.length ?? 0})</h2>
+
+      <ul>
+        {coaches?.map((coach) => (
+          <li key={coach.id}>{coach.full_name}</li>
+        ))}
+      </ul>
+
+      <h2>Registered Players ({players?.length ?? 0})</h2>
+
+      <ul>
+        {players?.map((player) => (
+          <li key={player.id}>
+            {player.first_name} {player.last_name}
+            {" — "}
+            {player.age_group}
+          </li>
+        ))}
+      </ul>
+
+      <p>
+        Player assignment controls will be added next.
+      </p>
+    </main>
+  );
+}
