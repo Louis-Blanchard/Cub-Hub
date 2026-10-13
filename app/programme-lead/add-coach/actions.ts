@@ -48,7 +48,7 @@ export async function createCoach(formData: FormData) {
 
   const { data, error: inviteError } =
     await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: "https://cub-hub.vercel.app/auth/callback?next=/set-password",
+      redirectTo: "https://cub-hub.vercel.app/auth/invite",
       data: {
         full_name: fullName,
       },
