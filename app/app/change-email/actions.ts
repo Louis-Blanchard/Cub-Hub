@@ -1,7 +1,7 @@
 
 "use server";
 
-import { supabaseServer } from "../../lib/supabase";
+import { supabaseServer } from "../../../lib/supabase";
 
 export async function requestEmailChange(formData: FormData) {
   const supabase = await supabaseServer();
