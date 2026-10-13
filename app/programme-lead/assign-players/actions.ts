@@ -87,6 +87,7 @@ export async function assignPlayer(formData: FormData) {
   revalidatePath("/programme-lead/assign-players");
 
   return { success: "Player assigned successfully." };
+}
 
 export async function removeAssignment(formData: FormData) {
   const supabase = await supabaseServer();
