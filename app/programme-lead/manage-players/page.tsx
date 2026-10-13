@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { supabaseServer } from '../../../lib/supabase';
 import PlayerSearch from './PlayerSearch';
 
-
 export const dynamic = 'force-dynamic';
 
 export default async function ManagePlayersPage() {
@@ -66,52 +65,14 @@ export default async function ManagePlayersPage() {
       >
         <h2>Registered Players</h2>
 
-  
-{playersError ? (
-  <p>
-    Unable to load players. Please try again.
-  </p>
-) : !players || players.length === 0 ? (
-  <p>No players found.</p>
-) : (
-  <>
-    <PlayerSearch players={players} />
-  </>
-)}
-
-              >
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', padding: '12px' }}>
-                      Player
-                    </th>
-                    <th style={{ textAlign: 'left', padding: '12px' }}>
-                      Age Group
-                    </th>
-                    <th style={{ textAlign: 'left', padding: '12px' }}>
-                      Player ID
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {players.map((player) => (
-                    <tr key={player.id}>
-                      <td style={{ padding: '12px', borderTop: '1px solid #ddd' }}>
-                        {player.first_name} {player.last_name}
-                      </td>
-                      <td style={{ padding: '12px', borderTop: '1px solid #ddd' }}>
-                        {player.age_group}
-                      </td>
-                      <td style={{ padding: '12px', borderTop: '1px solid #ddd' }}>
-                        {player.id}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+        {playersError ? (
+          <p>
+            Unable to load players. Please try again.
+          </p>
+        ) : !players || players.length === 0 ? (
+          <p>No players found.</p>
+        ) : (
+          <PlayerSearch players={players} />
         )}
       </section>
 
