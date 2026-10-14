@@ -82,7 +82,20 @@ export default async function ProgrammeLeadPage() {
       players = (data || []) as Player[];
     }
   }
+const {
+  count: totalPlayers,
+  error: totalPlayersError,
+} = await supabase
+  .from('players')
+  .select('*', { count: 'exact', head: true });
 
+const {
+  count: activeCoaches,
+  error: activeCoachesError,
+} = await supabase
+  .from('coaches')
+  .select('*', { count: 'exact', head: true })
+  .eq('is_active', true);
   const draftCount = assessments.filter(
     (a) => a.status === 'draft'
   ).length;
@@ -193,6 +206,28 @@ export default async function ProgrammeLeadPage() {
         <>
           <section className="profile">
             <h2>Assessment Overview</h2>
+            <div
+  style={{
+    display: 'flex',
+    gap: '16px',
+    flexWrap: 'wrap',
+    marginTop: '20px',
+  }}
+>
+  <div className="report" style={{ flex: 1, minWidth: '180px' }}>
+    <h3>Total Players</h3>
+    <p style={{ fontSize: '32px', fontWeight: 700 }}>
+      {totalPlayersError ? '—' : totalPlayers ?? 0}
+    </p>
+  </div>
+
+  <div className="report" style={{ flex: 1, minWidth: '180px' }}>
+    <h3>Active Coaches</h3>
+    <p style={{ fontSize: '32px', fontWeight: 700 }}>
+      {activeCoachesError ? '—' : activeCoaches ?? 0}
+    </p>
+  </div>
+</div>
 
             <div
               style={{
