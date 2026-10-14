@@ -290,8 +290,8 @@ export default async function ProgrammeLeadPage() {
                             </span>
                           </td>
                           <td style={cellStyle}>
-  <Link
-    href={`/programme-lead/review/${assessment.id}`}
+    <Link
+  href={`/programme-lead/assessment/${assessment.id}`}
     style={{
       color: '#742533',
       fontWeight: 600,
