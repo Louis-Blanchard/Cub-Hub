@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '../../lib/supabase';
+import AssessmentTable from "./AssessmentTable";
 
 export const dynamic = 'force-dynamic';
 
@@ -544,16 +545,25 @@ const missingAssessments = assessmentPeriods.map((period) => {
           >
             <h2>All Player Assessments</h2>
 
-            {assessments.length === 0 ? (
-              <p>No assessments have been created yet.</p>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    marginTop: '20px',
-                  }}
+
+<AssessmentTable
+  assessments={assessments.map((assessment) => {
+    const player = players.find(
+      (p) => p.id === assessment.player_id
+    );
+
+    return {
+      id: assessment.id,
+      playerName: player
+        ? `${player.first_name} ${player.last_name}`
+        : "Unknown player",
+      ageGroup: player?.age_group || "—",
+      period: assessment.period_label,
+      status: assessment.status,
+    };
+  })}
+/>
+
                 >
                   <thead>
                     <tr>
