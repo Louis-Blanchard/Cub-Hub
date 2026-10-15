@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { saveLeadAssessmentEdits } from "./actions";
 
 type Criterion = {
   category: string;
@@ -20,6 +21,8 @@ type Observation = {
 };
 
 type Props = {
+  assessmentId: number;
+  draftVersion: number;
   criteria: Criterion[];
   scores: Score[];
   observations: Observation[];
@@ -36,6 +39,8 @@ const categories = [
 ];
 
 export default function AssessmentEditForm({
+  assessmentId,
+  draftVersion,
   criteria,
   scores,
   observations,
@@ -65,7 +70,7 @@ export default function AssessmentEditForm({
         initial[key] = savedScore
           ? String(savedScore.score)
           : notObserved
-            ? "not_observed"
+            ? "not-observed"
             : "";
       }
 
@@ -78,6 +83,57 @@ export default function AssessmentEditForm({
     useState(nextStep1);
   const [nextStep2Value, setNextStep2Value] =
     useState(nextStep2);
+
+  const [currentVersion, setCurrentVersion] =
+    useState(draftVersion);
+
+  const [message, setMessage] = useState("");
+  const [saveSucceeded, setSaveSucceeded] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function updateScore(key: string, value: string) {
+    setValues((previous) => ({
+      ...previous,
+      [key]: value,
+    }));
+    setSaveSucceeded(false);
+    setMessage("");
+  }
+
+  function handleSave() {
+    setMessage("");
+    setSaveSucceeded(false);
+
+    const responses = criteria
+      .map((item) => {
+        const key = `${item.category}::${item.criterion}`;
+
+        return {
+          category: item.category,
+          criterion: item.criterion,
+          value: values[key] || "",
+        };
+      })
+      .filter((item) => item.value !== "");
+
+    startTransition(async () => {
+      const result = await saveLeadAssessmentEdits(
+        assessmentId,
+        currentVersion,
+        responses,
+        strengthValue,
+        nextStep1Value,
+        nextStep2Value
+      );
+
+      setMessage(result.message);
+      setSaveSucceeded(result.success);
+
+      if (result.success) {
+        setCurrentVersion((previous) => previous + 1);
+      }
+    });
+  }
 
   return (
     <div>
@@ -125,11 +181,9 @@ export default function AssessmentEditForm({
                       id={key}
                       value={values[key] || ""}
                       onChange={(event) =>
-                        setValues((previous) => ({
-                          ...previous,
-                          [key]: event.target.value,
-                        }))
+                        updateScore(key, event.target.value)
                       }
+                      disabled={isPending}
                       style={{
                         padding: "12px",
                         width: "100%",
@@ -144,7 +198,7 @@ export default function AssessmentEditForm({
                       <option value="3">3 / 5</option>
                       <option value="4">4 / 5</option>
                       <option value="5">5 / 5</option>
-                      <option value="not_observed">
+                      <option value="not-observed">
                         Not Observed
                       </option>
                     </select>
@@ -160,57 +214,60 @@ export default function AssessmentEditForm({
         <h2>Player Development Feedback</h2>
 
         <div style={{ marginTop: "20px" }}>
-          <label
-            htmlFor="strength"
-            style={{ display: "block", fontWeight: 600 }}
-          >
-            Player Strengths
+          <label htmlFor="strength">
+            <strong>Player Strengths</strong>
           </label>
 
           <textarea
             id="strength"
             value={strengthValue}
-            onChange={(event) =>
-              setStrengthValue(event.target.value)
-            }
+            onChange={(event) => {
+              setStrengthValue(event.target.value);
+              setSaveSucceeded(false);
+              setMessage("");
+            }}
+            disabled={isPending}
+            maxLength={2000}
             rows={4}
             style={{ width: "100%", padding: "12px" }}
           />
         </div>
 
         <div style={{ marginTop: "20px" }}>
-          <label
-            htmlFor="nextStep1"
-            style={{ display: "block", fontWeight: 600 }}
-          >
-            Development Goal 1
+          <label htmlFor="nextStep1">
+            <strong>Development Goal 1</strong>
           </label>
 
           <textarea
             id="nextStep1"
             value={nextStep1Value}
-            onChange={(event) =>
-              setNextStep1Value(event.target.value)
-            }
+            onChange={(event) => {
+              setNextStep1Value(event.target.value);
+              setSaveSucceeded(false);
+              setMessage("");
+            }}
+            disabled={isPending}
+            maxLength={2000}
             rows={4}
             style={{ width: "100%", padding: "12px" }}
           />
         </div>
 
         <div style={{ marginTop: "20px" }}>
-          <label
-            htmlFor="nextStep2"
-            style={{ display: "block", fontWeight: 600 }}
-          >
-            Development Goal 2
+          <label htmlFor="nextStep2">
+            <strong>Development Goal 2</strong>
           </label>
 
           <textarea
             id="nextStep2"
             value={nextStep2Value}
-            onChange={(event) =>
-              setNextStep2Value(event.target.value)
-            }
+            onChange={(event) => {
+              setNextStep2Value(event.target.value);
+              setSaveSucceeded(false);
+              setMessage("");
+            }}
+            disabled={isPending}
+            maxLength={2000}
             rows={4}
             style={{ width: "100%", padding: "12px" }}
           />
@@ -221,23 +278,43 @@ export default function AssessmentEditForm({
         <h2>Save Changes</h2>
 
         <p>
-          Your edits are not saved yet. We will connect
-          the secure saving functionality next.
+          Save your changes before returning to the
+          assessment review page.
         </p>
+
+        {message && (
+          <p
+            role="status"
+            style={{
+              padding: "14px",
+              borderRadius: "8px",
+              backgroundColor: saveSucceeded
+                ? "#e7f5eb"
+                : "#fde8e8",
+              color: saveSucceeded ? "#20643d" : "#922525",
+              marginBottom: "16px",
+            }}
+          >
+            {message}
+          </p>
+        )}
 
         <button
           type="button"
-          disabled
+          onClick={handleSave}
+          disabled={isPending}
           style={{
             padding: "14px 24px",
-            backgroundColor: "#999",
-            color: "#fff",
+            backgroundColor: "#742533",
+            color: "#ffffff",
             border: "none",
             borderRadius: "8px",
             fontWeight: 600,
+            cursor: isPending ? "wait" : "pointer",
+            opacity: isPending ? 0.6 : 1,
           }}
         >
-          Save Changes (Coming Next)
+          {isPending ? "Saving..." : "Save Changes"}
         </button>
       </section>
     </div>
