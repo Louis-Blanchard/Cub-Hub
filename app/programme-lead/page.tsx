@@ -182,6 +182,38 @@ if (!coachAssignmentsError && !coachDetailsError) {
   }
 }
 
+const {
+  data: allPlayersData,
+  error: allPlayersError,
+} = await supabase
+  .from("players")
+  .select("id, first_name, last_name, age_group")
+  .order("last_name", { ascending: true });
+
+const missingAssessments = assessmentPeriods.map((period) => {
+  const assessedPlayerIds = new Set(
+    assessments
+      .filter((assessment) => assessment.period_label === period)
+      .map((assessment) => assessment.player_id)
+  );
+
+  const missingPlayers = (allPlayersData || [])
+    .filter((player) => !assessedPlayerIds.has(player.id))
+    .map((player) => ({
+      id: player.id,
+      name: `${player.first_name} ${player.last_name}`,
+      ageGroup: player.age_group,
+      coaches: [
+        ...new Set(assignedCoachNames.get(player.id) || []),
+      ],
+    }));
+
+  return {
+    period,
+    players: missingPlayers,
+  };
+});
+
   const draftCount = assessments.filter(
     (a) => a.status === 'draft'
   ).length;
