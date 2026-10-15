@@ -153,11 +153,20 @@ export default function Login() {
               : method === 'password'
                 ? 'Sign in'
                 : 'Email me a sign-in link'}
-          </button>
+                   </button>
+
+          {method === 'password' && (
+            <p style={{ marginTop: '15px' }}>
+              <Link href="/forgot-password">
+                Forgot your password?
+              </Link>
+            </p>
+          )}
         </form>
 
         <p aria-live="polite" role="status">
           {message}
+        </p>
         </p>
       </div>
     </main>
