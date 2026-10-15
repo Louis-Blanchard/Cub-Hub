@@ -24,7 +24,7 @@ type Criterion = {
   score_5: string;
 };
 
-const PERIOD_LABEL = 'Winter 2026 - Final Assessment';
+const PERIOD_LABEL = 'Security Test - October 2026';
 
 const categories = [
   'Batting',
@@ -235,7 +235,7 @@ export default async function PlayerAssessmentPage({
       </div>
 
       <section className="profile">
-        <h2>Winter 2026 – Final Assessment</h2>
+        <h2>{PERIOD_LABEL}</h2>
 
         <p>
           Select the score that best reflects the
