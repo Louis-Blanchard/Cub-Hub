@@ -169,6 +169,8 @@ if (
       </section>
       
 <AssessmentEditForm
+  assessmentId={id}
+draftVersion={assessment.draft_version}
   criteria={criteriaResult.data || []}
   scores={scoresResult.data || []}
   observations={observationsResult.data || []}
