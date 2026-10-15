@@ -197,6 +197,9 @@ let observationsErrorMessage = false;
                   const detailedScores = assessmentScores.filter(
                     (item) => item.assessment_id === report.id
                   );
+                  const detailedObservations = assessmentObservations.filter(
+  (item) => item.assessment_id === report.id
+);
 
                   
 const categories = [
