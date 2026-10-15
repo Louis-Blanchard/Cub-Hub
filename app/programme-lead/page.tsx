@@ -511,10 +511,21 @@ const missingAssessments = assessmentPeriods.map((period) => {
                       <td style={cellStyle}>{player.name}</td>
                       <td style={cellStyle}>{player.ageGroup}</td>
                       <td style={cellStyle}>
-                        {player.coaches.length > 0
-                          ? player.coaches.join(", ")
-                          : "Unassigned"}
-                      </td>
+  {player.coaches.length > 0 ? (
+    player.coaches.join(", ")
+  ) : (
+    <Link
+      href="/programme-lead/assign-players"
+      style={{
+        color: "#742533",
+        fontWeight: 600,
+        textDecoration: "underline",
+      }}
+    >
+      Assign Coach →
+    </Link>
+  )}
+</td>
                     </tr>
                   ))}
                 </tbody>
