@@ -207,10 +207,37 @@ export default async function AssessmentReviewPage({
             : 'Draft'}
         </p>
 
-        <p className="muted">
-          Review the assessment scores and development
-          feedback before publishing.
-        </p>
+       
+{assessment.status === "published" ? (
+  <p className="muted">
+    This assessment has been published and is
+    available to linked parents.
+  </p>
+) : (
+  <>
+    <p className="muted">
+      Review the assessment scores and development
+      feedback before publishing.
+    </p>
+
+    <Link
+      href={`/programme-lead/assessment/${id}/edit`}
+      style={{
+        display: "inline-block",
+        marginTop: "12px",
+        padding: "12px 20px",
+        backgroundColor: "#742533",
+        color: "#ffffff",
+        borderRadius: "8px",
+        textDecoration: "none",
+        fontWeight: 600,
+      }}
+    >
+      Edit Assessment →
+    </Link>
+  </>
+)}
+
       </section>
 
       <section
