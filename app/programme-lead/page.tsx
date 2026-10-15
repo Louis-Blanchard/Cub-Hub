@@ -96,6 +96,19 @@ const {
   .from('coaches')
   .select('*', { count: 'exact', head: true })
   .eq('is_active', true);
+  const { data: ageGroupPlayers, error: ageGroupError } =
+  await supabase
+    .from('players')
+    .select('age_group');
+
+const ageGroups = ['U9', 'U10', 'U11', 'U12'];
+
+const ageGroupCounts = ageGroups.map((group) => ({
+  group,
+  count: (ageGroupPlayers || []).filter(
+    (player) => player.age_group === group
+  ).length,
+}));
   const draftCount = assessments.filter(
     (a) => a.status === 'draft'
   ).length;
@@ -259,7 +272,31 @@ const {
               </div>
             </div>
           </section>
+<section className="profile" style={{ marginTop: '24px' }}>
+  <h2>Players by Age Group</h2>
 
+  {ageGroupError ? (
+    <p>Unable to load age-group statistics.</p>
+  ) : (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: '16px',
+        marginTop: '20px',
+      }}
+    >
+      {ageGroupCounts.map(({ group, count }) => (
+        <div className="report" key={group}>
+          <h3>{group}</h3>
+          <p style={{ fontSize: '32px', fontWeight: 700 }}>
+            {count}
+          </p>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
           <section
             className="profile"
             style={{ marginTop: '24px' }}
