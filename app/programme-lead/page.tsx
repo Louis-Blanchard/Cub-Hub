@@ -462,6 +462,71 @@ const missingAssessments = assessmentPeriods.map((period) => {
   )}
 </section>
 
+<section className="profile" style={{ marginTop: "24px" }}>
+  <h2>Missing Assessments</h2>
+
+  <p>
+    View players who have not yet received an assessment
+    for each period, alongside their assigned coaches.
+  </p>
+
+  {allPlayersError || coachAssignmentsError || coachDetailsError ? (
+    <p role="alert">
+      Unable to load missing assessments or coach assignments.
+      Please refresh the page or try again later.
+    </p>
+  ) : missingAssessments.length === 0 ? (
+    <p>No assessment periods are available yet.</p>
+  ) : (
+    <div style={{ display: "grid", gap: "24px", marginTop: "24px" }}>
+      {missingAssessments.map(({ period, players }) => (
+        <div className="report" key={period}>
+          <h3>{period}</h3>
+
+          <p>
+            <strong>{players.length}</strong> players awaiting assessment
+          </p>
+
+          {players.length === 0 ? (
+            <p>All registered players have an assessment for this period.</p>
+          ) : (
+            <div style={{ overflowX: "auto", marginTop: "16px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={cellStyle}>Player</th>
+                    <th style={cellStyle}>Age Group</th>
+                    <th style={cellStyle}>Assigned Coaches</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {players.map((player) => (
+                    <tr key={player.id}>
+                      <td style={cellStyle}>{player.name}</td>
+                      <td style={cellStyle}>{player.ageGroup}</td>
+                      <td style={cellStyle}>
+                        {player.coaches.length > 0
+                          ? player.coaches.join(", ")
+                          : "Unassigned"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
           <section
             className="profile"
             style={{ marginTop: '24px' }}
