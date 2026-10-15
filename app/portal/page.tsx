@@ -120,6 +120,25 @@ let observationsErrorMessage = false;
         scoresErrorMessage = true;
       } else {
         assessmentScores = (scoreData || []) as AssessmentScore[];
+              const {
+        data: observationData,
+        error: observationError,
+      } = await supabase
+        .from('assessment_observations')
+        .select('id, assessment_id, category, criterion')
+        .in('assessment_id', assessmentIds)
+        .order('id', { ascending: true });
+
+      if (observationError) {
+        console.error(
+          'Assessment observations query failed:',
+          observationError.message
+        );
+        observationsErrorMessage = true;
+      } else {
+        assessmentObservations =
+          (observationData || []) as AssessmentObservation[];
+      }
       }
     }
   }
