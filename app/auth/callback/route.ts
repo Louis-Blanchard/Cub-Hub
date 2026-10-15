@@ -43,11 +43,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (type === "recovery" || next === "/reset-password") {
-      return NextResponse.redirect(
-        new URL("/reset-password", url.origin)
-      );
-    }
+   if (type === "recovery" || next === "/reset-password") {
+  const response = NextResponse.redirect(
+    new URL("/reset-password", url.origin)
+  );
+
+  response.cookies.set("cub_hub_recovery", "verified", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/reset-password",
+    maxAge: 600,
+  });
+
+  return response;
+}
 
     return NextResponse.redirect(
       new URL("/portal", url.origin)
