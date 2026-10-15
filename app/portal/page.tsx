@@ -214,6 +214,10 @@ const categoryAssessments = categories.map((category) => {
     (item) => item.category === category
   );
 
+  const observations = detailedObservations.filter(
+    (item) => item.category === category
+  );
+
   const average =
     scores.length > 0
       ? scores.reduce(
@@ -222,7 +226,7 @@ const categoryAssessments = categories.map((category) => {
         ) / scores.length
       : null;
 
-  return { category, scores, average };
+  return { category, scores, observations, average };
 });
 
                   return (
