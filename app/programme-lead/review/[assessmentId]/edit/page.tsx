@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "../../../../../lib/supabase";
+import AssessmentEditForm from "./AssessmentEditForm";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +97,44 @@ export default async function EditAssessmentPage({
       </main>
     );
   }
+  
+const [
+  scoresResult,
+  observationsResult,
+  criteriaResult,
+] = await Promise.all([
+  supabase
+    .from("assessment_scores")
+    .select("category, criterion, score")
+    .eq("assessment_id", id),
+
+  supabase
+    .from("assessment_observations")
+    .select("category, criterion")
+    .eq("assessment_id", id),
+
+  supabase
+    .from("assessment_criteria")
+    .select("category, criterion, display_order")
+    .order("display_order", { ascending: true }),
+]);
+
+if (
+  scoresResult.error ||
+  observationsResult.error ||
+  criteriaResult.error
+) {
+  return (
+    <main className="wrap section">
+      <h1>Unable to load assessment scores</h1>
+      <p>Please try again later.</p>
+      <Link href={`/programme-lead/assessment/${id}`}>
+        Back to Assessment Review
+      </Link>
+    </main>
+  );
+}
+
 
   return (
     <main className="wrap section">
@@ -126,12 +165,18 @@ export default async function EditAssessmentPage({
           <strong>Status:</strong> Draft
         </p>
 
-        <p>
-          This assessment is ready for editing.
-          In the next step, we'll add the score and
-          development feedback fields.
-        </p>
+       
       </section>
+      
+<AssessmentEditForm
+  criteria={criteriaResult.data || []}
+  scores={scoresResult.data || []}
+  observations={observationsResult.data || []}
+  strength={assessment.strength || ""}
+  nextStep1={assessment.next_step_1 || ""}
+  nextStep2={assessment.next_step_2 || ""}
+/>
+
     </main>
   );
 }
