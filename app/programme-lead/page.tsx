@@ -109,6 +109,42 @@ const ageGroupCounts = ageGroups.map((group) => ({
     (player) => player.age_group === group
   ).length,
 }));
+  const assessmentPeriods = [
+  ...new Set(
+    assessments.map((assessment) => assessment.period_label)
+  ),
+];
+
+const assessmentProgress = assessmentPeriods.map((period) => {
+  const periodAssessments = assessments.filter(
+    (assessment) => assessment.period_label === period
+  );
+
+  const assessedPlayers = new Set(
+    periodAssessments.map((assessment) => assessment.player_id)
+  );
+
+  const publishedPlayers = new Set(
+    periodAssessments
+      .filter((assessment) => assessment.status === 'published')
+      .map((assessment) => assessment.player_id)
+  );
+
+  const completed = assessedPlayers.size;
+  const published = publishedPlayers.size;
+  const total = totalPlayers ?? 0;
+
+  return {
+    period,
+    completed,
+    published,
+    awaiting: Math.max(total - completed, 0),
+    percentage:
+      total > 0
+        ? Math.round((completed / total) * 100)
+        : 0,
+  };
+});
   const draftCount = assessments.filter(
     (a) => a.status === 'draft'
   ).length;
