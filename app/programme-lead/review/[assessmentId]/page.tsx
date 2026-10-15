@@ -221,7 +221,7 @@ export default async function AssessmentReviewPage({
     </p>
 
     <Link
-      href={`/programme-lead/assessment/${id}/edit`}
+      href={`/programme-lead/review/${id}/edit`}
       style={{
         display: "inline-block",
         marginTop: "12px",
