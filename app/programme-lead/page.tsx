@@ -333,6 +333,66 @@ const assessmentProgress = assessmentPeriods.map((period) => {
     </div>
   )}
 </section>
+          
+<section className="profile" style={{ marginTop: "24px" }}>
+  <h2>Assessment Progress</h2>
+
+  <p>
+    Track assessment completion separately for each
+    assessment period.
+  </p>
+
+  {assessmentProgress.length === 0 ? (
+    <p>No assessment periods have been created yet.</p>
+  ) : (
+    <div style={{ display: "grid", gap: "24px", marginTop: "24px" }}>
+      {assessmentProgress.map((progress) => (
+        <div className="report" key={progress.period}>
+          <h3>{progress.period}</h3>
+
+          <p style={{ fontSize: "20px", fontWeight: 700 }}>
+            {progress.completed} of {totalPlayers ?? 0} players assessed
+            ({progress.percentage}%)
+          </p>
+
+          <div
+            style={{
+              width: "100%",
+              height: "16px",
+              backgroundColor: "#e5e7eb",
+              borderRadius: "10px",
+              overflow: "hidden",
+              marginTop: "12px",
+              marginBottom: "16px",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress.percentage}%`,
+                height: "100%",
+                backgroundColor: "#742533",
+                borderRadius: "10px",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "20px",
+            }}
+          >
+            <p><strong>Assessed:</strong> {progress.completed}</p>
+            <p><strong>Published:</strong> {progress.published}</p>
+            <p><strong>Awaiting:</strong> {progress.awaiting}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
           <section
             className="profile"
             style={{ marginTop: '24px' }}
