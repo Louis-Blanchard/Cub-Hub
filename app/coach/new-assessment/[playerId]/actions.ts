@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '../../../../lib/supabase';
 
-const PERIOD_LABEL = 'Winter 2026 - Final Assessment';
+const PERIOD_LABEL = 'Security Test - October 2026';
 
 type SaveResult = {
   success: boolean;
