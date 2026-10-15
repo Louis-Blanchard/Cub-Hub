@@ -36,12 +36,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (authenticated) {
+    if (authenticated) {
     if (type === "invite" || next === "/set-password") {
       return NextResponse.redirect(
         new URL("/set-password", url.origin)
       );
     }
+
+    if (type === "recovery" || next === "/reset-password") {
+      return NextResponse.redirect(
+        new URL("/reset-password", url.origin)
+      );
+    }
+
+    return NextResponse.redirect(
+      new URL("/portal", url.origin)
+    );
+  }
 
     return NextResponse.redirect(
       new URL("/portal", url.origin)
