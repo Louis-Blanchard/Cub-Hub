@@ -81,11 +81,13 @@ if (!playerError && linkedPlayerIds.length > 0) {
 
 const playerIds = safePlayers.map((player) => player.id);
 
-  
   let assessments: Assessment[] = [];
-  let assessmentScores: AssessmentScore[] = [];
-  let assessmentErrorMessage = false;
-  let scoresErrorMessage = false;
+let assessmentScores: AssessmentScore[] = [];
+let assessmentObservations: AssessmentObservation[] = [];
+
+let assessmentErrorMessage = false;
+let scoresErrorMessage = false;
+let observationsErrorMessage = false;
 
   if (playerIds.length > 0) {
     const { data, error } = await supabase
