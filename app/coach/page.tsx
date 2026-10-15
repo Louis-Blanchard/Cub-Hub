@@ -107,9 +107,12 @@ export default async function CoachDashboard() {
                   {player.first_name} {player.last_name}
                 </h3>
                 <p>{player.age_group} · Cub Hub</p>
-                <p className="muted">
-                  Assessment management coming soon.
-                </p>
+               <Link
+  href={`/coach/new-assessment/${player.id}`}
+  className="btn"
+>
+  New Assessment
+</Link>
               </div>
             ))}
           </div>
