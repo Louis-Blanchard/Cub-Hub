@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-   if (type === "recovery" || next === "/reset-password") {
+   if (type === "recovery") {
   const response = NextResponse.redirect(
     new URL("/reset-password", url.origin)
   );
