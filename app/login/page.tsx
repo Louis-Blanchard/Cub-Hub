@@ -164,11 +164,10 @@ export default function Login() {
           )}
         </form>
 
-        <p aria-live="polite" role="status">
-          {message}
-        </p>
-        </p>
-      </div>
-    </main>
-  );
+  <p aria-live="polite" role="status">
+  {message}
+</p>
+</div>
+</main>
+);
 }
