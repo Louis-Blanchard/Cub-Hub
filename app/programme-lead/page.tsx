@@ -145,6 +145,43 @@ const assessmentProgress = assessmentPeriods.map((period) => {
         : 0,
   };
 });
+  
+const {
+  data: coachAssignments,
+  error: coachAssignmentsError,
+} = await supabase
+  .from("coach_players")
+  .select("coach_id, player_id");
+
+const {
+  data: coachDetails,
+  error: coachDetailsError,
+} = await supabase
+  .from("coaches")
+  .select("id, full_name");
+
+const assignedCoachNames = new Map<number, string[]>();
+
+if (!coachAssignmentsError && !coachDetailsError) {
+  for (const assignment of coachAssignments || []) {
+    const coach = (coachDetails || []).find(
+      (c) => c.id === assignment.coach_id
+    );
+
+    if (coach) {
+      const existing =
+        assignedCoachNames.get(assignment.player_id) || [];
+
+      existing.push(coach.full_name);
+
+      assignedCoachNames.set(
+        assignment.player_id,
+        existing
+      );
+    }
+  }
+}
+
   const draftCount = assessments.filter(
     (a) => a.status === 'draft'
   ).length;
