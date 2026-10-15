@@ -256,8 +256,8 @@ const categoryAssessments = categories.map((category) => {
     <p>Unable to load detailed assessment scores.</p>
   </div>
 ) : (
-  categoryAssessments.map(({ category, scores, average }) =>
-    scores.length > 0 ? (
+  categoryAssessments.map(({ category, scores, observations, average }) =>
+    scores.length > 0 || observations.length > 0 ? (
       <div
         key={category}
         style={{
@@ -279,7 +279,7 @@ const categoryAssessments = categories.map((category) => {
               color: '#742533',
             }}
           >
-            {average?.toFixed(1)} / 5
+            {average !== null ? `${average.toFixed(1)} / 5` : 'Not Observed'}
           </strong>
           {' '}
           <span className="muted">
@@ -321,6 +321,20 @@ const categoryAssessments = categories.map((category) => {
                 }}
               />
             </div>
+          </div>
+        ))}
+                {observations.map((item) => (
+          <div
+            key={`observation-${item.id}`}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '12px',
+              marginBottom: '18px',
+            }}
+          >
+            <span>{item.criterion}</span>
+            <strong>Not Observed</strong>
           </div>
         ))}
       </div>
