@@ -31,6 +31,12 @@ type AssessmentScore = {
   criterion: string;
   score: number;
 };
+type AssessmentObservation = {
+  id: number;
+  assessment_id: number;
+  category: string;
+  criterion: string;
+};
 
 export default async function Portal() {
   const supabase = await supabaseServer();
